@@ -1,0 +1,32 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap");
+@import "primeicons/primeicons.css";
+@import "tailwindcss";
+
+/* Color variables */
+@layer base {
+  :root {
+    --primary: #003366;
+    --secondary: #4a90e2;
+    --background: #ffffff;
+    --accent: #28a745;
+    --danger: #d32f2f;
+    --link: #009688;
+  }
+}
+
+* {
+  font-family: "Inter", sans-serif;
+}
+
+.heroCover {
+  background-image: url("./assets/hero.png");
+  background-position: right;
+  background-repeat: no-repeat;
+  background-size: 55%;
+}
+.moreco {
+  background-image: url("./assets/pers.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
