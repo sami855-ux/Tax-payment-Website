@@ -21,9 +21,6 @@ export default function Register() {
         <h2 className="font-bold text-3xl bg-gradient-to-r from-blue-500 to-[#065b8c] text-transparent bg-clip-text">
           Create your account
         </h2>
-        <p className="text-gray-500 pt-4 font-light text-[16px]">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Dicta, iste.
-        </p>
         <RegisterInput />
       </section>
       <section className="w-1/2 h-full  flex items-center justify-center relative">
