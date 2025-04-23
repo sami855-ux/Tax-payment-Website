@@ -1,5 +1,5 @@
 import { Link } from "react-scroll"
-import ButtonTwo from "../util/ButtonTwo"
+import ButtonTwo from "../ui/ButtonTwo"
 import logo from "../assets/logo.png"
 
 export default function Header() {

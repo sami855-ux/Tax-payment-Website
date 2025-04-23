@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom"
 
-import ButtonOne from "../util/ButtonOne"
+import ButtonOne from "../ui/ButtonOne"
 import HeroImage from "../assets/hero.png"
 export default function Main() {
   const navigate = useNavigate()

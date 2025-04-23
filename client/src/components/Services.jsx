@@ -1,8 +1,8 @@
-import { useState } from "react"
 import { GoCheckCircleFill } from "react-icons/go"
 import { FaShieldAlt } from "react-icons/fa"
 import { MdCalculate } from "react-icons/md"
 import { motion } from "framer-motion"
+import { useState } from "react"
 
 export default function Services() {
   return (

@@ -1,4 +1,4 @@
-import TestimonialCard from "../util/TestimonialCard"
+import TestimonialCard from "../ui/TestimonialCard"
 
 import per1 from "../assets/per1.png"
 import per2 from "../assets/per2.png"
