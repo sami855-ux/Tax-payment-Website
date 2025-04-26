@@ -1,9 +1,9 @@
-import Footer from "../components/Footer"
-import Header from "../components/Header"
-import Main from "../components/Main"
-import MoreService from "../components/MoreService"
-import Services from "../components/Services"
-import Testimonial from "../components/Testimonial"
+import Testimonial from "@/components/Testimonial"
+import MoreService from "@/components/MoreService"
+import Services from "@/components/Services"
+import Header from "@/components/Header"
+import Footer from "@/components/Footer"
+import Main from "@/components/Main"
 
 export default function App() {
   return (

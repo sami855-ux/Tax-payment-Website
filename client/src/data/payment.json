@@ -1,0 +1,107 @@
+[
+  {
+    "taxCategory": "Income Tax",
+    "transactionId": "TXN10001",
+    "taxPeriod": "2024-Q1",
+    "date": "2024-04-05",
+    "amountPaid": 2400
+  },
+  {
+    "taxCategory": "Business Tax",
+    "transactionId": "TXN10002",
+    "taxPeriod": "2024-Q1",
+    "date": "2024-04-10",
+    "amountPaid": 4600
+  },
+  {
+    "taxCategory": "Property Tax",
+    "transactionId": "TXN10003",
+    "taxPeriod": "2023",
+    "date": "2024-03-15",
+    "amountPaid": 3200
+  },
+  {
+    "taxCategory": "Income Tax",
+    "transactionId": "TXN10004",
+    "taxPeriod": "2023-Q4",
+    "date": "2024-01-20",
+    "amountPaid": 2100
+  },
+  {
+    "taxCategory": "Business Tax",
+    "transactionId": "TXN10005",
+    "taxPeriod": "2023-Q3",
+    "date": "2023-11-11",
+    "amountPaid": 5100
+  },
+  {
+    "taxCategory": "Property Tax",
+    "transactionId": "TXN10006",
+    "taxPeriod": "2023",
+    "date": "2023-12-01",
+    "amountPaid": 3800
+  },
+  {
+    "taxCategory": "Income Tax",
+    "transactionId": "TXN10007",
+    "taxPeriod": "2024-Q2",
+    "date": "2024-05-10",
+    "amountPaid": 2700
+  },
+  {
+    "taxCategory": "Business Tax",
+    "transactionId": "TXN10008",
+    "taxPeriod": "2024-Q2",
+    "date": "2024-05-15",
+    "amountPaid": 6000
+  },
+  {
+    "taxCategory": "Property Tax",
+    "transactionId": "TXN10009",
+    "taxPeriod": "2022",
+    "date": "2023-03-22",
+    "amountPaid": 3400
+  },
+  {
+    "taxCategory": "Income Tax",
+    "transactionId": "TXN10010",
+    "taxPeriod": "2024-Q3",
+    "date": "2024-08-01",
+    "amountPaid": 2500
+  },
+  {
+    "taxCategory": "Business Tax",
+    "transactionId": "TXN10011",
+    "taxPeriod": "2024-Q3",
+    "date": "2024-08-10",
+    "amountPaid": 4700
+  },
+  {
+    "taxCategory": "Property Tax",
+    "transactionId": "TXN10012",
+    "taxPeriod": "2024",
+    "date": "2024-07-05",
+    "amountPaid": 3900
+  },
+  {
+    "taxCategory": "Income Tax",
+    "transactionId": "TXN10013",
+    "taxPeriod": "2024-Q4",
+    "date": "2024-10-11",
+    "amountPaid": 2900
+  },
+  {
+    "taxCategory": "Business Tax",
+    "transactionId": "TXN10014",
+    "taxPeriod": "2024-Q4",
+    "date": "2024-10-20",
+    "amountPaid": 5200
+  },
+  {
+    "taxCategory": "Property Tax",
+    "transactionId": "TXN10015",
+    "taxPeriod": "2024",
+    "date": "2024-12-05",
+    "amountPaid": 4100
+  }
+]

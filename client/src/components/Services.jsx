@@ -6,11 +6,11 @@ import { useState } from "react"
 
 export default function Services() {
   return (
-    <div className="min-h-[65vh] pb-5 mx-28" id="service">
+    <div className="min-h-[70vh] pb-5 mx-28" id="service">
       <section className="md:w-[70%] lg:w-fit min-h-96 grid grid-cols-1 grid-rows-4 md:grid-cols-2 md:grid-rows-2 lg:grid-cols-4 lg:grid-rows-1 gap-7">
-        <div className="w-[300px] md:h-[240px] lg:w-[300px] lg:h-[90%] bg-gradient-to-b from-blue-500 to-green-400 p-4 pt-10 rounded-md ">
+        <div className="w-[300px] md:h-[240px] flex flex-col justify-center lg:w-[300px] lg:h-[90%] bg-gradient-to-b from-blue-500 to-green-400 p-4 pt-10 rounded-md ">
           <h2 className="text-2xl text-white font-semibold">Our services</h2>
-          <p className=" text-white pt-5 font-light">
+          <p className="text-[15px] text-white pt-5 font-light">
             Experience simple and secure tax payments with real-time tracking,
             automated reminders, and more
           </p>

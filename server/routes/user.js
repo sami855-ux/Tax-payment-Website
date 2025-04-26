@@ -3,17 +3,20 @@ import {
   deleteTaxpayer,
   getAllTaxpayers,
   isAuthenticated,
-  loginTaxpayer,
-  registerTaxpayer,
+  login,
+  register,
   updateTaxpayer,
 } from "../controller/user.controller.js"
+
+import { registerValidation } from "../validators/register.js"
+import { loginValidation } from "../validators/login.js"
 
 const router = express.Router()
 
 //To register
-router.post("/register", registerTaxpayer)
+router.post("/register", registerValidation, register)
 // To Login
-router.get("/login", loginTaxpayer)
+router.get("/login", loginValidation, login)
 // To get all tax payers
 router.get("/", isAuthenticated, getAllTaxpayers)
 //To update tax payer using id

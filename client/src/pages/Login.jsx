@@ -1,8 +1,21 @@
-import { useNavigate } from "react-router-dom"
+import {
+  Form,
+  redirect,
+  useActionData,
+  useNavigate,
+  useNavigation,
+} from "react-router-dom"
+import { Loader } from "lucide-react"
+
+import { loginUser } from "@/services/apiUser"
 import styles from "./Login.module.css"
+import { validateEmail } from "@/helpers/Validiation"
 
 export default function Login() {
   const navigate = useNavigate()
+  const navigation = useNavigation()
+  const formError = useActionData()
+  const isSubmitting = navigation.state === "submitting"
 
   const handleRegister = () => {
     navigate("/register")
@@ -10,7 +23,10 @@ export default function Login() {
 
   return (
     <div className="w-screen h-screen flex items-center justify-center">
-      <form className={`${styles["form"]} border border-gray-100 shadow-2xl`}>
+      <Form
+        className={`${styles["form"]} border border-gray-100 shadow-2xl`}
+        method="POST"
+      >
         <div className="py-5 ">
           <h2 className="text-2xl font-semibold bg-gradient-to-r py-2 text-center from-blue-500 to-[#065b8c] text-transparent bg-clip-text">
             Hi there, Good to see you back!
@@ -20,6 +36,11 @@ export default function Login() {
             with Ease!
           </p>
         </div>
+        {formError?.error && (
+          <p className="text-red-500 text-[15px] my-2 py-4 bg-red-100 px-4 rounded-md">
+            {formError.error}
+          </p>
+        )}
         <div className={`${styles["flex-column"]} `}>
           <label className="text-blue-800">Email </label>
         </div>
@@ -36,6 +57,7 @@ export default function Login() {
           </svg>
           <input
             type="text"
+            name="email"
             className={styles["input"]}
             placeholder="Enter your Email"
           />
@@ -56,6 +78,7 @@ export default function Login() {
           </svg>
           <input
             type="password"
+            name="password"
             className={styles["input"]}
             placeholder="Enter your Password"
           />
@@ -75,14 +98,46 @@ export default function Login() {
           </div>
           <span className={styles["span"]}>Forgot password?</span>
         </div>
-        <button className={styles["button-submit"]}>Sign In</button>
+        <button type="submit" className={styles["button-submit"]}>
+          {isSubmitting ? (
+            <span className="flex items-center justify-center gap-2">
+              <Loader className="animate-spin" size={20} /> Please wait...
+            </span>
+          ) : (
+            "Sign In"
+          )}
+        </button>
         <p className={styles["p"]}>
           Don't have an account?{" "}
           <span className={styles["span"]} onClick={handleRegister}>
             Sign Up
           </span>
         </p>
-      </form>
+      </Form>
     </div>
   )
+}
+//eslint-disable-next-line
+export async function action({ request }) {
+  const formData = await request.formData()
+  const data = Object.fromEntries(formData)
+
+  let error = ""
+
+  if (!data.email || !data.password) {
+    error = "Filed are empty"
+  } else if (!validateEmail(data.email)) error = "Invalid email"
+
+  if (error) {
+    return { error } // return errors if validation fails
+  }
+
+  // Perform the login operation
+  const response = await loginUser(data)
+
+  if (response.error) {
+    return { error: response.error }
+  }
+
+  return redirect("/")
 }

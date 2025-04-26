@@ -1,12 +1,23 @@
 import bcrypt from "bcryptjs"
+import jwt from "jsonwebtoken"
+import dotenv from "dotenv"
 import { validationResult } from "express-validator"
 
 import Taxpayer from "../models/userModel.js"
 
+dotenv.config()
+
+const createToken = (user) => {
+  return jwt.sign(
+    { id: user._id, email: user.emailAddress, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN }
+  )
+}
+
 // Register Taxpayer
-export const registerTaxpayer = async (req, res) => {
+export const register = async (req, res) => {
   try {
-    // Validate request data
     const errors = validationResult(req)
     if (!errors.isEmpty())
       return res.status(400).json({ errors: errors.array() })
@@ -24,7 +35,6 @@ export const registerTaxpayer = async (req, res) => {
       role,
     } = req.body
 
-    // Check if the email or tax ID already exists
     const existingUser = await Taxpayer.findOne({
       $or: [{ emailAddress }, { taxId }],
     })
@@ -33,10 +43,8 @@ export const registerTaxpayer = async (req, res) => {
         .status(400)
         .json({ message: "Email or Tax ID already registered" })
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Create new taxpayer
     const newTaxpayer = new Taxpayer({
       fullName,
       gender,
@@ -51,32 +59,56 @@ export const registerTaxpayer = async (req, res) => {
     })
 
     await newTaxpayer.save()
-    res.status(201).json({ message: "Taxpayer registered successfully" })
+
+    // 🔐 Create token and set cookie
+    const token = createToken(newTaxpayer)
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    })
+
+    res.status(201).json({
+      success: true,
+      message: "Taxpayer registered and logged in",
+      user: newTaxpayer,
+    })
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message })
   }
 }
 
 // Login Taxpayer
-export const loginTaxpayer = async (req, res) => {
+export const login = async (req, res) => {
   try {
+    const errors = validationResult(req)
+    if (!errors.isEmpty())
+      return res.status(400).json({ errors: errors.array() })
+
     const { emailAddress, password } = req.body
 
-    // Find user by email
     const taxpayer = await Taxpayer.findOne({ emailAddress })
     if (!taxpayer)
       return res.status(400).json({ message: "Invalid email or password" })
 
-    // Compare passwords
     const isMatch = await bcrypt.compare(password, taxpayer.password)
-    if (!isMatch)
-      return res.status(400).json({ message: "Invalid email or password" })
+    if (!isMatch) return res.status(400).json({ message: "Invalid password" })
 
-    // Store user session
-    req.session.user = { id: taxpayer._id, email: taxpayer.emailAddress }
-    res
-      .status(200)
-      .json({ message: "Login successful", user: req.session.user })
+    const token = createToken(taxpayer)
+
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 24 * 60 * 60 * 1000,
+    })
+
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      user: taxpayer,
+    })
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message })
   }
@@ -84,9 +116,25 @@ export const loginTaxpayer = async (req, res) => {
 
 // Middleware to Check Authentication
 export const isAuthenticated = (req, res, next) => {
-  if (!req.session.user)
+  const token = req.cookies.authToken
+
+  if (!token) {
     return res.status(401).json({ message: "Unauthorized, please log in" })
-  next()
+  }
+
+  try {
+    // Verify the token and decode the user data
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+
+    // Attach user info to the request object (can be accessed in next middleware)
+    req.user = decoded
+
+    next()
+  } catch (error) {
+    return res
+      .status(401)
+      .json({ message: "Unauthorized, invalid or expired token" })
+  }
 }
 
 // Get All Taxpayers (Only for Authenticated Users)

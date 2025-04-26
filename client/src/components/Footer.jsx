@@ -11,15 +11,15 @@ import { motion } from "framer-motion"
 export default function Footer() {
   return (
     <div
-      className="w-full h-[45vh] bg-[#042e48] text-white flex justify-center items-center flex-col gap-3"
+      className="w-full min-h-[45vh] bg-[#064995] text-white flex justify-center items-center flex-col gap-3"
       id="contact"
     >
       <section className="w-full md:w-[87%] min-h-72 md:pt-16 flex flex-col md:flex-row gap-7 justify-center items-center mt-32 md:mt-0 ">
         <div className="w-[420px] h-full">
           <p className="text-[14px] text-gray-200">
-            Lorem ipsum, dolor sit amet consectetur adipisicing elit. Error
-            autem a recusandae reprehenderit quo quisquam id, perspiciatis
-            similique quibusdam explicabo? Totam hic dolore adipisci voluptatem?
+            Get an accurate estimate of your taxes before filing. Our advanced
+            tax calculator helps you understand your obligations and avoid
+            surprises.
           </p>
 
           <section className="flex items-center w-full gap-3 h-28">
@@ -65,7 +65,7 @@ export default function Footer() {
           />
         </div>
       </section>
-      <div className="flex items-center justify-between w-full px-40 min-h-16 bg-[#042e48]">
+      <div className="flex items-center justify-between w-full px-4 md:px-40 min-h-16 bg-[#064995]">
         <p className="text-xs text-white"> &copy; All right are reserved</p>
 
         <section className="flex gap-4 ">

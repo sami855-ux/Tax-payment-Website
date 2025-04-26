@@ -10,7 +10,6 @@ export default function AdminLayout() {
         <Menu />
       </div>
       <div className="bg-gray-600" style={{ width: "calc(100vw - 280px)" }}>
-        {/* Nav bar */}
         <Navbar />
         <Outlet />
       </div>

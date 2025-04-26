@@ -1,10 +1,22 @@
-import { Form, useNavigate } from "react-router-dom"
+import {
+  Form,
+  redirect,
+  useActionData,
+  useNavigate,
+  useNavigation,
+} from "react-router-dom"
 import { FaAngleLeft } from "react-icons/fa"
+import { Loader, Loader2 } from "lucide-react"
 
+import { validateEmail, validatePhoneNumber } from "@/helpers/Validiation"
+import { registerUser } from "@/services/apiUser"
 import register from "../assets/register.png"
 
 export default function Register() {
   const navigate = useNavigate()
+  const navigation = useNavigation()
+  const formErrors = useActionData()
+  const isSubmitting = navigation.state === "submitting"
 
   const handleBack = () => {
     navigate(-1)
@@ -21,7 +33,11 @@ export default function Register() {
         <h2 className="font-bold text-3xl bg-gradient-to-r from-blue-500 to-[#065b8c] text-transparent bg-clip-text">
           Create your account
         </h2>
-
+        {formErrors?.error && (
+          <p className="text-red-500 text-[15px] my-2 py-4 bg-red-100 px-4 rounded-md">
+            {formErrors.error}
+          </p>
+        )}
         <Form method="POST">
           <div className="w-full h-14 flex gap-4 items-center  my-4">
             <FormCell
@@ -101,14 +117,23 @@ export default function Register() {
             />
           </div>
           <div className="w-full h-14 flex gap-4 items-center justify-between my-2">
-            <button className="border border-gray-300 py-1 px-14 rounded-md cursor-pointer">
+            <button
+              className="border border-gray-300 py-1 px-14 rounded-md cursor-pointer hover:bg-stone-200"
+              type="reset"
+            >
               Cancel
             </button>
             <button
               type="submit"
-              className="border border-gray-300 py-1 hover:bg-blue-800 px-14 rounded-md cursor-pointer bg-blue-900 text-white"
+              className="border border-gray-300 py-2 text-[15px] hover:bg-blue-800 px-14 rounded-md cursor-pointer bg-blue-900 text-white"
             >
-              Submit
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <Loader className="animate-spin" size={20} /> Loading...
+                </span>
+              ) : (
+                "Sign up"
+              )}
             </button>
           </div>
         </Form>
@@ -131,6 +156,7 @@ const FormCell = ({ name, type, width, placeholder, value, method_red }) => {
         name={name}
         placeholder={placeholder}
         onChange={method_red}
+        required
         className="border text-[15px] border-gray-300 py-1 px-3 rounded-md outline-none focus:border-blue-500"
       />
     </div>
@@ -142,19 +168,47 @@ export async function action({ request }) {
   const formData = await request.formData()
   const data = Object.fromEntries(formData)
 
+  let error = ""
+
   const correctedData = {
     fullName: data["Full Name"],
     gender: data.sex,
     phoneNumber: parseInt(data["Mobile Phone"]),
     taxId: data["Tax ID"],
     password: data.Password,
+    confirmPassword: data["Confirm password"],
     email: data.Email,
     residentialAddress: data["Residency Place"],
     kebele: data.Kebele,
     wereda: data.Woreda,
   }
-  //Validation
 
   console.log(correctedData)
-  return null
+  //Validation
+  if (
+    !correctedData.fullName ||
+    !correctedData.gender ||
+    !correctedData.phoneNumber ||
+    !correctedData.taxId ||
+    !correctedData.password ||
+    !correctedData.email ||
+    !correctedData.residentialAddress ||
+    !correctedData.kebele ||
+    !correctedData.wereda
+  ) {
+    error = "Filed are empty"
+  } else if (!validateEmail(correctedData.email)) error = "Invalid Email"
+  else if (correctedData.password !== correctedData.confirmPassword)
+    error = "Password is not the same"
+  // else if (!validatePhoneNumber(correctedData.phoneNumber))
+  //   error = "Invalid ethiopian phone number"
+
+  if (error) return { error }
+
+  //If everything is okay create the user
+
+  const response = await registerUser(correctedData)
+  if (response.error) return response.error
+
+  return redirect("/login")
 }
