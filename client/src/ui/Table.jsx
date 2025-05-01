@@ -7,7 +7,7 @@ const StyledTable = styled.div`
   font-size: 1.4rem;
   background-color: var(--color-grey-0);
   border-radius: 7px;
-  overflow: hidden;
+  overflow: x-auto;
 `
 
 const CommonRow = styled.div`
@@ -21,20 +21,21 @@ const CommonRow = styled.div`
 const StyledHeader = styled(CommonRow)`
   padding: 1rem 1.3rem;
 
-  background-color: var(--color-grey-50);
-  border-bottom: 1px solid var(--color-grey-100);
+  background-color: #f4f4f4;
+  border-bottom: 1px solid #f9f9f9;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.9rem;
-  color: var(--color-grey-600);
+  color: #333;
 `
 
 const StyledRow = styled(CommonRow)`
   padding: 1rem 2.4rem;
+  position: relative;
 
   &:not(:last-child) {
-    border-bottom: 1px solid var(--color-grey-100);
+    border-bottom: 1px solid #e3e6eb;
   }
 `
 

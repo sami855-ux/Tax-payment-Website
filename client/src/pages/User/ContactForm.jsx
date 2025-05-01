@@ -1,5 +1,7 @@
 import React, { useState } from "react"
 import { motion } from "framer-motion"
+import { sendEmail } from "@/services/sendEmail"
+import toast from "react-hot-toast"
 
 const ContactForm = () => {
   const [formData, setFormData] = useState({
@@ -16,10 +18,25 @@ const ContactForm = () => {
     setFormData((prevState) => ({ ...prevState, [name]: value }))
   }
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault()
-    // Handle form submission (e.g., send data to backend)
-    setFormStatus("Your message has been sent successfully!") // This could be a dynamic response from your backend
+
+    try {
+      const res = await sendEmail(formData)
+
+      if (res?.success) {
+        setFormStatus(res.message)
+        toast.success(res.message)
+      } else {
+        setFormStatus(res.message)
+      }
+    } catch (error) {
+      console.error("Error sending email:", error)
+      setFormStatus(
+        "There was an error sending your message. Please try again."
+      )
+      toast.error("There was an error sending your message. Please try again.")
+    }
   }
 
   return (

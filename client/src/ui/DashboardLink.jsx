@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom"
 
 export default function DashboardLink({
-  path,
+  path = "",
   text,
   icon,
   isMobileMenu = false,

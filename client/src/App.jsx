@@ -15,10 +15,15 @@ import TaxFilling from "./pages/User/TaxFilling"
 import UserLayout from "@/pages/User/UserLayout"
 import Dashboard from "@/pages/Admin/Dashboard"
 import Setting from "./pages/User/Setting"
-import GlobalStyles from "./GlobalStyles"
 import PayTax from "./pages/User/PayTax"
 import Welcome from "@/pages/Welcome"
 import Error from "@/ui/Error"
+import ManageUser from "./pages/Admin/ManageUser"
+import ManageTax from "./pages/Admin/ManageTax"
+import Payment from "./pages/Admin/Payment"
+import Settings from "./pages/Admin/Settings"
+import Report from "@/pages/Admin/Report"
+import Profile from "./pages/Admin/Profile"
 
 const router = createBrowserRouter([
   {
@@ -45,7 +50,34 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
+        path: "dashboard",
         element: <Dashboard />,
+      },
+      {
+        path: "manage-users",
+        element: <ManageUser />,
+      },
+      {
+        path: "manage-tax",
+        element: <ManageTax />,
+      },
+
+      {
+        path: "payment",
+        element: <Payment />,
+      },
+
+      {
+        path: "setting",
+        element: <Settings />,
+      },
+      {
+        path: "report",
+        element: <Report />,
+      },
+      {
+        path: "profile",
+        element: <Profile />,
       },
     ],
   },
@@ -109,7 +141,6 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <ReactQueryDevtools initialIsOpen={false} />
 
-        <GlobalStyles />
         <RouterProvider router={router} />
 
         <Toaster
@@ -124,9 +155,10 @@ export default function App() {
               duration: 5000,
             },
             style: {
-              fontSize: "16px",
-              maxWidth: "500px",
-              padding: "16px 24px",
+              fontSize: "15px",
+              maxWidth: "600px",
+              padding: "14px 24px",
+              fontFamily: "Inter",
             },
           }}
         />

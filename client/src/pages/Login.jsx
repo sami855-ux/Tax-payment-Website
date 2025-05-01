@@ -10,6 +10,7 @@ import { Loader } from "lucide-react"
 import { loginUser } from "@/services/apiUser"
 import styles from "./Login.module.css"
 import { validateEmail } from "@/helpers/Validiation"
+import toast from "react-hot-toast"
 
 export default function Login() {
   const navigate = useNavigate()
@@ -128,16 +129,38 @@ export async function action({ request }) {
     error = "Filed are empty"
   } else if (!validateEmail(data.email)) error = "Invalid email"
 
+  console.log(data)
   if (error) {
     return { error } // return errors if validation fails
   }
 
-  // Perform the login operation
-  const response = await loginUser(data)
+  try {
+    const response = await loginUser(data)
 
-  if (response.error) {
-    return { error: response.error }
+    if (response.success) {
+      toast.success("User Login successfully!")
+      //Store the user id in the local storage
+      localStorage.setItem("userId", response.user?._id)
+
+      console.log(response.user.role)
+      //Redirect dynamically taxpayer
+      if (response.user?.role == "taxpayer") return redirect("/user/dashboard")
+      else if (response.user?.role == "official")
+        return redirect("/official/dashboard")
+      else if (response.user?.role == "admin")
+        return redirect("/admin/dashboard")
+      else return redirect("/login")
+    } else {
+      console.log(response.error)
+      toast.error(response.error.message)
+      return {
+        status: "error",
+        data: response.error,
+      }
+    }
+  } catch (error) {
+    toast.error("Something went wrong, please try again later.")
+    console.error(error)
+    return
   }
-
-  return redirect("/")
 }

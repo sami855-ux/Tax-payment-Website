@@ -1,6 +1,15 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/helpers/util"
+import SectionWrapper from "@/ui/SectionWrapper"
+import Input from "@/ui/Input"
+import Toggle from "@/ui/Toggle"
+import SaveButton from "@/ui/SaveButton"
+import UpdateProfile from "./UpdateProfile"
+import SecuritySetting from "./SecuritySetting"
+import { deleteUser, exportUserToPDF, logoutUser } from "@/services/apiUser"
+import toast from "react-hot-toast"
+import { useNavigate } from "react-router-dom"
 
 const sections = [
   { id: "profile", label: "Profile" },
@@ -13,6 +22,33 @@ const sections = [
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("profile")
+  const navigate = useNavigate()
+
+  const handleExportData = async () => {
+    try {
+      await exportUserToPDF()
+
+      toast.success("User data is being exported to PDF.")
+    } catch (error) {
+      console.error("Error exporting user data:", error)
+      toast.error("Failed to export user data. Please try again.")
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    try {
+      const res = await deleteUser()
+      if (res.success) {
+        toast.success(res.message)
+
+        //redirect the user or perform any other action after deletion
+        navigate("/")
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error)
+      toast.error("Failed to delete account. Please try again.")
+    }
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -38,33 +74,9 @@ export default function SettingsPage() {
       {/* Main Content */}
       <main className="flex-1 p-8 overflow-y-auto">
         <AnimatePresence mode="wait">
-          {activeSection === "profile" && (
-            <SectionWrapper title="Update Profile">
-              <Input label="Full Name" placeholder="John Doe" />
-              <Input label="Email" placeholder="john@example.com" />
-              <Input label="Age" placeholder="22" />
-              <Input label="Kebele" placeholder="02" />
-              <Input label="Wereda" placeholder="Mehal Meda" />
-              <SaveButton />
-            </SectionWrapper>
-          )}
+          {activeSection === "profile" && <UpdateProfile />}
 
-          {activeSection === "security" && (
-            <SectionWrapper title="Security Settings">
-              <Input label="New Password" type="password" />
-              <Input label="Confirm Password" type="password" />
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  className="w-5 h-5 rounded cursor-pointer text-indigo-600 outline-none focus:ring-2"
-                />
-                <label className="text-gray-700 text-sm">
-                  Enable Two-Factor Authentication (2FA)
-                </label>
-              </div>
-              <SaveButton />
-            </SectionWrapper>
-          )}
+          {activeSection === "security" && <SecuritySetting />}
 
           {activeSection === "payments" && (
             <SectionWrapper title="Manage Payment Methods">
@@ -115,10 +127,16 @@ export default function SettingsPage() {
 
           {activeSection === "account" && (
             <SectionWrapper title="Account Settings">
-              <button className="w-full px-6 py-3 bg-blue-400 text-white rounded-lg hover:bg-blue-500 transition mb-4 cursor-pointer">
+              <button
+                className="w-full px-6 py-3 bg-blue-400 text-white rounded-lg hover:bg-blue-500 transition mb-4 cursor-pointer"
+                onClick={handleExportData}
+              >
                 Export My Data
               </button>
-              <button className="w-full px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-400 transition cursor-pointer">
+              <button
+                className="w-full px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-400 transition cursor-pointer"
+                onClick={handleDeleteAccount}
+              >
                 Delete My Account
               </button>
             </SectionWrapper>
@@ -126,57 +144,5 @@ export default function SettingsPage() {
         </AnimatePresence>
       </main>
     </div>
-  )
-}
-
-// Reusable Components
-function SectionWrapper({ children, title }) {
-  return (
-    <motion.div
-      key={title}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.4 }}
-      className="space-y-6"
-    >
-      <h3 className="text-3xl font-bold text-gray-800 mb-6">{title}</h3>
-      <div className="space-y-4">{children}</div>
-    </motion.div>
-  )
-}
-
-function Input({ label, type = "text", placeholder }) {
-  return (
-    <div>
-      <label className="block mb-3 text-sm text-gray-700 font-semibold">
-        {label}
-      </label>
-      <input
-        type={type}
-        placeholder={placeholder}
-        className="w-[90%] p-3 border rounded-lg border-gray-300  focus:border-gray-500 outline-none"
-      />
-    </div>
-  )
-}
-
-function Toggle({ label }) {
-  return (
-    <div className="flex items-center justify-between bg-white p-4 border border-gray-300 rounded-lg shadow-sm">
-      <span className="text-gray-800">{label}</span>
-      <input
-        type="checkbox"
-        className="w-6 h-6 rounded-full text-indigo-600  focus:ring-2 cursor-pointer"
-      />
-    </div>
-  )
-}
-
-function SaveButton() {
-  return (
-    <button className="mt-6 px-12 cursor-pointer py-2 text-[16px] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-      Save Changes
-    </button>
   )
 }

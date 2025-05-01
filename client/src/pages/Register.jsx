@@ -6,21 +6,34 @@ import {
   useNavigation,
 } from "react-router-dom"
 import { FaAngleLeft } from "react-icons/fa"
-import { Loader, Loader2 } from "lucide-react"
+import {
+  Home,
+  Loader,
+  Loader2,
+  LucideMail,
+  Map,
+  MapPin,
+  Phone,
+  ShieldCheck,
+} from "lucide-react"
 
 import { validateEmail, validatePhoneNumber } from "@/helpers/Validiation"
 import { registerUser } from "@/services/apiUser"
 import register from "../assets/register.png"
+import toast from "react-hot-toast"
+import { HiIdentification, HiKey, HiLockClosed, HiUser } from "react-icons/hi"
 
 export default function Register() {
   const navigate = useNavigate()
   const navigation = useNavigation()
-  const formErrors = useActionData()
+  const actionData = useActionData()
   const isSubmitting = navigation.state === "submitting"
 
   const handleBack = () => {
     navigate(-1)
   }
+
+  console.log(actionData)
 
   return (
     <div className="w-full h-screen flex items-center justify-center">
@@ -33,11 +46,13 @@ export default function Register() {
         <h2 className="font-bold text-3xl bg-gradient-to-r from-blue-500 to-[#065b8c] text-transparent bg-clip-text">
           Create your account
         </h2>
-        {formErrors?.error && (
-          <p className="text-red-500 text-[15px] my-2 py-4 bg-red-100 px-4 rounded-md">
-            {formErrors.error}
+
+        {actionData?.status === "error" && (
+          <p className="text-white bg-red-300 py-4 my-1 rounded-md px-4">
+            {actionData?.data?.errors?.at(0)?.msg || actionData?.data?.message}
           </p>
         )}
+
         <Form method="POST">
           <div className="w-full h-14 flex gap-4 items-center  my-4">
             <FormCell
@@ -45,12 +60,14 @@ export default function Register() {
               name="Full Name"
               type="text"
               width="1/2"
+              icon={<HiUser size={20} className="text-gray-700" />}
             />
             <FormCell
               placeholder="Enter your email"
               name="Email"
               type="email"
               width="1/2"
+              icon={<LucideMail size={20} className="text-gray-700" />}
             />
           </div>
           <div className="w-full h-14 flex flex-col my-">
@@ -74,12 +91,14 @@ export default function Register() {
               name="Mobile Phone"
               type="tel"
               width="1/2"
+              icon={<Phone size={20} className="text-gray-700" />}
             />
             <FormCell
               placeholder="Enter your residency"
               name="Residency Place"
               type="text"
               width="1/2"
+              icon={<Home size={20} className="text-gray-700" />}
             />
           </div>
           <div className="w-full h-14 flex gap-4 items-center   my-4">
@@ -88,12 +107,14 @@ export default function Register() {
               name="Woreda"
               type="tel"
               width="1/2"
+              icon={<MapPin size={20} className="text-gray-700" />}
             />
             <FormCell
               placeholder="Enter your kebele"
               name="Kebele"
               type="text"
               width="1/2"
+              icon={<Map size={20} className="text-gray-700" />}
             />
           </div>
           <FormCell
@@ -101,6 +122,7 @@ export default function Register() {
             name="Tax ID"
             type="text"
             width="full"
+            icon={<HiIdentification size={20} className="text-gray-700" />}
           />
           <div className="w-full h-14 flex gap-4 items-center   my-4">
             <FormCell
@@ -108,12 +130,14 @@ export default function Register() {
               name="Password"
               type="password"
               width="1/2"
+              icon={<HiLockClosed size={20} className="text-gray-700" />}
             />
             <FormCell
               placeholder="Confirm your password"
               name="Confirm password"
               type="password"
               width="1/2"
+              icon={<ShieldCheck size={20} className="text-gray-700" />}
             />
           </div>
           <div className="w-full h-14 flex gap-4 items-center justify-between my-2">
@@ -144,21 +168,32 @@ export default function Register() {
     </div>
   )
 }
-const FormCell = ({ name, type, width, placeholder, value, method_red }) => {
+const FormCell = ({
+  name,
+  type,
+  width,
+  placeholder,
+  value,
+  method_red,
+  icon,
+}) => {
   return (
     <div className={`w-${width} h-14 flex flex-col`}>
       <label htmlFor={name} className="pb-1 text-gray-800 text-[15px]">
         {name}
       </label>
-      <input
-        value={value}
-        type={type}
-        name={name}
-        placeholder={placeholder}
-        onChange={method_red}
-        required
-        className="border text-[15px] border-gray-300 py-1 px-3 rounded-md outline-none focus:border-blue-500"
-      />
+      <section className="border border-gray-300 rounded-md flex items-center gap-2 px-2">
+        {icon || <HiUser size={20} />}
+        <input
+          value={value}
+          type={type}
+          name={name}
+          placeholder={placeholder}
+          onChange={method_red}
+          required
+          className=" text-[15px]  py-1 px-3 rounded-md outline-none bg-transparent"
+        />
+      </section>
     </div>
   )
 }
@@ -168,8 +203,10 @@ export async function action({ request }) {
   const formData = await request.formData()
   const data = Object.fromEntries(formData)
 
+  // Initialize an empty error message
   let error = ""
 
+  // Corrected data object
   const correctedData = {
     fullName: data["Full Name"],
     gender: data.sex,
@@ -183,8 +220,7 @@ export async function action({ request }) {
     wereda: data.Woreda,
   }
 
-  console.log(correctedData)
-  //Validation
+  // Validation
   if (
     !correctedData.fullName ||
     !correctedData.gender ||
@@ -196,19 +232,45 @@ export async function action({ request }) {
     !correctedData.kebele ||
     !correctedData.wereda
   ) {
-    error = "Filed are empty"
-  } else if (!validateEmail(correctedData.email)) error = "Invalid Email"
-  else if (correctedData.password !== correctedData.confirmPassword)
-    error = "Password is not the same"
-  // else if (!validatePhoneNumber(correctedData.phoneNumber))
-  //   error = "Invalid ethiopian phone number"
+    error = "All fields must be filled out!"
+  } else if (!validateEmail(correctedData.email)) {
+    error = "Invalid email address!"
+  } else if (correctedData.password !== correctedData.confirmPassword) {
+    error = "Passwords do not match!"
+  }
 
-  if (error) return { error }
+  if (error) {
+    toast.error(error)
+    return
+  }
 
-  //If everything is okay create the user
+  try {
+    const response = await registerUser(correctedData)
 
-  const response = await registerUser(correctedData)
-  if (response.error) return response.error
+    if (response.success) {
+      toast.success("User registered successfully!")
 
-  return redirect("/login")
+      //Store the user id in the local storage
+      localStorage.setItem("userId", response.user?._id)
+
+      console.log(response.user.role)
+      //Redirect dynamically taxpayer
+      if (response.user?.role == "taxpayer") return redirect("/user/dashboard")
+      else if (response.user?.role == "official")
+        return redirect("/official/dashboard")
+      else if (response.user?.role == "admin")
+        return redirect("/admin/dashboard")
+      else return redirect("/register")
+    } else {
+      console.log(response.error)
+      return {
+        status: "error",
+        data: response.error,
+      }
+    }
+  } catch (error) {
+    toast.error("Something went wrong, please try again later.")
+    console.error(error)
+    return
+  }
 }

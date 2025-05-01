@@ -4,10 +4,28 @@ import { AiOutlineSetting } from "react-icons/ai"
 import { RiFileList3Line } from "react-icons/ri"
 import DashboardLink from "@/ui/DashboardLink"
 import { HiOutlineHome } from "react-icons/hi"
+import { useDispatch } from "react-redux"
 
+import { logout } from "@/redux/slice/userSlice"
+import { logoutUser } from "@/services/apiUser"
+import { useNavigate } from "react-router-dom"
 import hero from "@/assets/logo.png"
+import toast from "react-hot-toast"
 
 export default function Menu() {
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+
+  const handleLogout = async () => {
+    const res = await logoutUser()
+
+    if (res.success) {
+      dispatch(logout())
+      localStorage.removeItem("userId")
+      toast.success(res.message)
+      navigate("/")
+    }
+  }
   return (
     <>
       <div
@@ -70,11 +88,19 @@ export default function Menu() {
             path="/user/help"
             icon={<MdSupportAgent size={23} />}
           />
-          <DashboardLink
-            text={"Logout"}
-            path="/user/logout"
-            icon={<FiLogOut size={23} />}
-          />
+          <li
+            className={`w-[260px] md:w-[65px] lg:w-[260px] relative `}
+            onClick={handleLogout}
+          >
+            <p
+              className={`nav-item flex items-center gap-3.5 px-4 py-3 rounded-md w-full cursor-pointer`}
+            >
+              <span className="icon">
+                <FiLogOut size={23} />
+              </span>
+              <span className={` lg:inline  label `}>Logout</span>
+            </p>
+          </li>
         </ul>
       </div>
     </>

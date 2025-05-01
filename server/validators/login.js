@@ -2,7 +2,7 @@ import { check } from "express-validator"
 
 export const loginValidation = [
   // Validate email
-  check("emailAddress")
+  check("email")
     .isEmail()
     .withMessage("Please provide a valid email address")
     .normalizeEmail(),
@@ -10,5 +10,5 @@ export const loginValidation = [
   // Validate password (at least 6 characters long)
   check("password")
     .isLength({ min: 3 })
-    .withMessage("Password must be at least 6 characters long"),
+    .withMessage("Password must be at least 3 characters long"),
 ]

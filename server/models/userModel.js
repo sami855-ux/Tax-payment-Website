@@ -9,7 +9,7 @@ const UserSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
-      enum: ["Male", "Female", "Other"],
+      enum: ["male", "female", "other"],
       required: true,
     },
     phoneNumber: {
@@ -47,13 +47,13 @@ const UserSchema = new mongoose.Schema(
       required: true,
     },
     profilePhoto: {
-      type: String, // This can be a URL or file path
-      default: null, // Optional field
+      type: String,
+      default: null,
     },
     role: {
       type: String,
-      enum: ["taxpayer", "admin"], // Only allows these two roles
-      default: "taxpayer", // Default role is taxpayer
+      enum: ["taxpayer", "official", "admin"],
+      default: "taxpayer",
     },
   },
   { timestamps: true }

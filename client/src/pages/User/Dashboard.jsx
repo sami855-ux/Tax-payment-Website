@@ -1,12 +1,37 @@
-import Button from "@/ui/Button"
+import { useDispatch } from "react-redux"
+import { useEffect } from "react"
+
 import { AiOutlineFileSearch } from "react-icons/ai"
 import { FaArrowUp, FaCoins } from "react-icons/fa"
+import { getUserById } from "@/services/apiUser"
+import { login } from "@/redux/slice/userSlice"
+import HistoryTable from "./HistoryTable"
 import { BsTags } from "react-icons/bs"
 import LineChart from "./LineChart"
 import PieChart from "./PieChart"
-import HistoryTable from "./HistoryTable"
+import Button from "@/ui/Button"
 
 export default function UserDashboard() {
+  const dispatch = useDispatch()
+
+  useEffect(() => {
+    document.title = "Dashboard"
+
+    const getUserInfo = async () => {
+      const res = await getUserById()
+
+      if (res.success) {
+        dispatch(
+          login({
+            user: res.user,
+          })
+        )
+      }
+    }
+
+    getUserInfo()
+  }, [])
+
   return (
     <div className="bg-gray-300 min-h-screen p-4">
       <section className="w-full h-14 flex items-center justify-between pr-5 py-3">

@@ -1,13 +1,13 @@
 import { check } from "express-validator"
 
 export const registerValidation = [
-  check("emailAddress")
+  check("email")
     .isEmail()
     .withMessage("Please provide a valid email address")
     .normalizeEmail(),
 
   check("password")
-    .isLength({ min: 6 })
+    .isLength({ min: 2 })
     .withMessage("Password must be at least 6 characters long")
     .matches(/\d/)
     .withMessage("Password must contain at least one number")

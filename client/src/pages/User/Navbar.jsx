@@ -6,8 +6,10 @@ import { useState } from "react"
 
 import hero from "@/assets/logo.png"
 import { FiChevronDown } from "react-icons/fi"
+import { useSelector } from "react-redux"
 
 export default function Navbar({ onBarClicked }) {
+  const { user } = useSelector((store) => store.user)
   const [query, setIsQuery] = useState("")
 
   return (
@@ -51,12 +53,15 @@ export default function Navbar({ onBarClicked }) {
             <img
               src={hero}
               alt="Logo"
-              className="w-9 h-9 rounded-full cursor-pointer"
+              className="w-12 h-12 rounded-full cursor-pointer"
             />
             <section className="">
-              <h2 className="font-semibold text-gray-800 pb-1 text-[15px] cursor-pointer hidden md:block">
-                Samuel Tale
+              <h2 className="font-semibold text-gray-800 text-[15px] cursor-pointer hidden md:block">
+                {user?.fullName}
               </h2>
+              <p className="capitalize text-[14px] text-blue-500 ">
+                {user?.role}
+              </p>
             </section>
             <FiChevronDown size={22} className="cursor-pointer" />
           </div>

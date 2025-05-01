@@ -6,6 +6,13 @@ import DashboardLink from "@/ui/DashboardLink"
 import { HiOutlineHome } from "react-icons/hi"
 
 import hero from "@/assets/logo.png"
+import {
+  LucideBarChart,
+  LucideClipboardList,
+  LucideUser2,
+  LucideWallet,
+  LucideWallet2,
+} from "lucide-react"
 
 export default function Menu() {
   return (
@@ -33,23 +40,23 @@ export default function Menu() {
 
           <DashboardLink
             text={"Dashboard"}
-            path="/user/dashboard"
+            path="/official/dashboard"
             icon={<HiOutlineHome size={23} />}
           />
           <DashboardLink
-            text={"Pay Tax"}
-            path="/user/payTax"
-            icon={<MdPayment size={23} />}
+            text={"Verify Tax Filings"}
+            path="/official/taxFilling"
+            icon={<LucideClipboardList size={23} />}
           />
           <DashboardLink
-            text={"Tax Filing"}
-            path="/user/taxFilling"
-            icon={<RiFileList3Line size={23} />}
+            text={"Taxpayers"}
+            path="/official/taxPayers"
+            icon={<LucideUser2 size={23} />}
           />
           <DashboardLink
-            text={"Payment History"}
-            path="/user/history"
-            icon={<MdHistory size={23} />}
+            text={"Tax Payments & Transactions"}
+            path="/official/payments"
+            icon={<LucideWallet size={23} />}
           />
           <li className="pl-5 my-3">
             <span className="font-semibold text-[14px] text-gray-600 md:hidden lg:block">
@@ -62,13 +69,13 @@ export default function Menu() {
           </li>
           <DashboardLink
             text={"Setting"}
-            path="/user/setting"
+            path="/official/setting"
             icon={<AiOutlineSetting size={23} />}
           />
           <DashboardLink
-            text={"Help center"}
-            path="/user/help"
-            icon={<MdSupportAgent size={23} />}
+            text={"Reports & Analytics"}
+            path="/official/help"
+            icon={<LucideBarChart size={23} />}
           />
           <DashboardLink
             text={"Logout"}

@@ -1,12 +1,13 @@
-import styled from "styled-components";
-import Button from "./Button";
-import Heading from "./Heading";
+import styled from "styled-components"
+import Button from "./Button"
 
 const StyledConfirmDelete = styled.div`
   width: 40rem;
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
+  background-color: white;
+  padding: 1.5rem;
 
   & p {
     color: var(--color-grey-500);
@@ -18,31 +19,36 @@ const StyledConfirmDelete = styled.div`
     justify-content: flex-end;
     gap: 1.2rem;
   }
-`;
+`
 
-function ConfirmDelete({ resourceName, onConfirm, disabled, onCloseModal }) {
+function ConfirmDelete({ resourceName, onConfirm, onCloseModal }) {
   return (
     <StyledConfirmDelete>
-      <Heading as="h3">Delete {resourceName}</Heading>
+      <h3 className="py-2 font-semibold text-2xl">Delete {resourceName}</h3>
       <p>
         Are you sure you want to delete this {resourceName} permanently? This
         action cannot be undone.
       </p>
 
       <div>
-        <Button
-          variation="secondary"
-          disabled={disabled}
+        <button
+          className="py-1 px-9 border border-gray-200 rounded-lg cursor-pointer bg-gray-300"
           onClick={onCloseModal}
         >
           Cancel
-        </Button>
-        <Button variation="danger" disabled={disabled} onClick={onConfirm}>
+        </button>
+        <button
+          className="py-1 px-9 border border-gray-200 rounded-lg cursor-pointer bg-red-500 text-white"
+          onClick={() => {
+            onConfirm()
+            onCloseModal()
+          }}
+        >
           Delete
-        </Button>
+        </button>
       </div>
     </StyledConfirmDelete>
-  );
+  )
 }
 
-export default ConfirmDelete;
+export default ConfirmDelete

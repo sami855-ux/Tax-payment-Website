@@ -17,7 +17,7 @@ export default function Modal({
 
         <Dialog.Content
           className={cn(
-            "bg-white rounded-xl shadow-xl p-6 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50",
+            "bg-white rounded-xl shadow-xl p-6 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-100",
             modalClassName
           )}
         >
