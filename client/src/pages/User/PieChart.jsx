@@ -1,14 +1,18 @@
+import { useSelector } from "react-redux"
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts"
-
-const taxCategories = [
-  { name: "Income Tax", value: 400 },
-  { name: "Property Tax", value: 300 },
-  { name: "Business Tax", value: 300 },
-]
 
 const COLORS = ["url(#gradient1)", "url(#gradient2)", "url(#gradient3)"]
 
 export default function TaxPieChart() {
+  const { user } = useSelector((store) => store.user)
+
+  const categories = user?.taxCategories?.map((category) => {
+    const dummyValue = Math.floor(Math.random() * 500) + 100 // Dummy value between 100 and 600
+    return {
+      name: `${category.charAt(0).toUpperCase() + category.slice(1)} Tax`, // Capitalize first letter and append "Tax"
+      value: dummyValue,
+    }
+  })
   return (
     <div className="w-full h-[380px] bg-gray-100  p-6">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
@@ -33,7 +37,7 @@ export default function TaxPieChart() {
           </defs>
 
           <Pie
-            data={taxCategories}
+            data={categories}
             cx="50%"
             cy="50%"
             labelLine={false}
@@ -45,7 +49,7 @@ export default function TaxPieChart() {
               `${name} (${(percent * 100).toFixed(0)}%)`
             }
           >
-            {taxCategories.map((_, index) => (
+            {categories?.map((_, index) => (
               <Cell
                 key={`cell-${index}`}
                 fill={COLORS[index % COLORS.length]}

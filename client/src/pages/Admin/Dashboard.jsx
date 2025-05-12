@@ -1,6 +1,10 @@
 import { useDispatch } from "react-redux"
 import { useEffect } from "react"
 
+import {
+  clearNotifications,
+  fetchNotifications,
+} from "@/redux/slice/notificationSlice"
 import PaymentHistory from "../../components/PaymentHistory"
 import { getUserById } from "@/services/apiUser"
 import { login } from "@/redux/slice/userSlice"
@@ -22,11 +26,15 @@ export default function Dashboard() {
             user: res.user,
           })
         )
+
+        dispatch(clearNotifications())
       }
     }
 
     getUserInfo()
-  }, [])
+
+    dispatch(fetchNotifications())
+  }, [dispatch])
 
   return (
     <div className="w-screen md:w-full p-4 bg-gray-300 min-h-screen">

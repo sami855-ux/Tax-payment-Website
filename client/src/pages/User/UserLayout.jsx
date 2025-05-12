@@ -1,15 +1,36 @@
 import { Outlet } from "react-router-dom"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import Navbar from "./Navbar"
 import Menu, { MobileMenu } from "./Menu"
+import { sendDailyReminder } from "@/services/Reminder"
+import { useDispatch } from "react-redux"
+import {
+  fetchFiledPeriods,
+  fetchFiledTaxSchedules,
+} from "@/redux/slice/taxschedule"
+import { fetchNotifications } from "@/redux/slice/notificationSlice"
 
 export default function AdminLayout() {
   const [isBarClicked, setIsBarClicked] = useState(false)
+  const dispatch = useDispatch()
 
   const handleBarClicked = () => {
     setIsBarClicked((curr) => !curr)
   }
+
+  useEffect(() => {
+    async function handleReminder() {
+      await sendDailyReminder()
+    }
+
+    handleReminder()
+
+    dispatch(fetchNotifications())
+    // dispatch(fetchFiledPeriods())
+    dispatch(fetchFiledTaxSchedules())
+  }, [dispatch])
+
   return (
     <div className="w-full h-screen flex">
       {isBarClicked ? (

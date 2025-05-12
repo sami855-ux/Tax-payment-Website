@@ -21,6 +21,7 @@ import { logoutUser } from "@/services/apiUser"
 import DashboardLink from "@/ui/DashboardLink"
 import hero from "@/assets/logo.png"
 import { useDispatch } from "react-redux"
+import { Banknote, Coins, ReceiptText, Wrench } from "lucide-react"
 
 export default function Menu() {
   const navigate = useNavigate()
@@ -75,6 +76,11 @@ export default function Menu() {
             path="/admin/manage-tax"
             icon={<FiFileText size={23} />}
           />
+          <DashboardLink
+            text={"Tax Payment Logs"}
+            path="/admin/payment-log"
+            icon={<Coins size={23} />}
+          />
           <li className="pl-5 my-3">
             <span className="font-semibold text-[14px] text-gray-600 md:hidden lg:block">
               {" "}
@@ -88,6 +94,11 @@ export default function Menu() {
             text={"Setting"}
             path="/admin/setting"
             icon={<AiOutlineSetting size={23} />}
+          />
+          <DashboardLink
+            text={"System Maintenance"}
+            path="/admin/maintenance"
+            icon={<Wrench size={23} />}
           />
           <DashboardLink
             text={"Reports & Analytics"}

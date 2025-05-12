@@ -10,7 +10,7 @@ const paymentSchema = new mongoose.Schema(
     taxCategory: {
       type: String,
       required: true,
-      enum: ["Income Tax", "VAT", "Business Tax", "Property Tax", "Other"], // adjust as needed
+      enum: ["personal", "business", "vat", "property", "other"], // adjust as needed
     },
     amount: {
       type: Number,
@@ -27,7 +27,7 @@ const paymentSchema = new mongoose.Schema(
     },
     method: {
       type: String,
-      enum: ["Card", "Bank Transfer", "Mobile Money", "Cash"],
+      enum: ["telebirr", "Bank Transfer", "Mobile Money"],
       default: "Bank Transfer",
     },
     status: {

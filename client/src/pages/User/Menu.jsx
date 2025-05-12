@@ -4,7 +4,7 @@ import { AiOutlineSetting } from "react-icons/ai"
 import { RiFileList3Line } from "react-icons/ri"
 import DashboardLink from "@/ui/DashboardLink"
 import { HiOutlineHome } from "react-icons/hi"
-import { useDispatch } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 
 import { logout } from "@/redux/slice/userSlice"
 import { logoutUser } from "@/services/apiUser"
@@ -13,8 +13,12 @@ import hero from "@/assets/logo.png"
 import toast from "react-hot-toast"
 
 export default function Menu() {
+  const { user } = useSelector((store) => store.user)
+  const { schedules } = useSelector((store) => store.filled)
   const navigate = useNavigate()
   const dispatch = useDispatch()
+
+  const isTaxSetupFinished = user?.isTaxSetupComplete
 
   const handleLogout = async () => {
     const res = await logoutUser()
@@ -26,6 +30,8 @@ export default function Menu() {
       navigate("/")
     }
   }
+
+  console.log(schedules.length)
   return (
     <>
       <div
@@ -58,16 +64,19 @@ export default function Menu() {
             text={"Pay Tax"}
             path="/user/payTax"
             icon={<MdPayment size={23} />}
+            disabled={!isTaxSetupFinished || schedules.length == 0}
           />
           <DashboardLink
             text={"Tax Filing"}
             path="/user/taxFilling"
             icon={<RiFileList3Line size={23} />}
+            disabled={!isTaxSetupFinished}
           />
           <DashboardLink
             text={"Payment History"}
             path="/user/history"
             icon={<MdHistory size={23} />}
+            disabled={!isTaxSetupFinished}
           />
           <li className="pl-5 my-3">
             <span className="font-semibold text-[14px] text-gray-600 md:hidden lg:block">
@@ -98,7 +107,7 @@ export default function Menu() {
               <span className="icon">
                 <FiLogOut size={23} />
               </span>
-              <span className={` lg:inline  label `}>Logout</span>
+              <span className={`hidden lg:inline  label `}>Logout</span>
             </p>
           </li>
         </ul>

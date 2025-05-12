@@ -26,26 +26,17 @@ export const registerValidation = [
     .isLength({ min: 10, max: 10 })
     .withMessage("Phone number should be exactly 10 digits"),
 
-  // Validate taxId (assuming it should be a number with a specific format)
   check("taxId")
     .isLength({ min: 10, max: 10 })
     .withMessage("Tax ID must be 10 digits long")
     .isNumeric()
     .withMessage("Tax ID must be numeric"),
 
-  check("residentialAddress")
-    .isLength({ min: 5 })
-    .withMessage("Residential Address is required")
-    .trim()
-    .escape(),
-
-  // Optional: Validate gender if required, else skip this field
   check("gender")
     .optional()
     .isIn(["male", "female", "other"])
     .withMessage("Gender must be male, female, or other"),
 
-  // Validate kebele and wereda (if necessary, can be optional)
   check("kebele")
     .optional()
     .isLength({ min: 2 })

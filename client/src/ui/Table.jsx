@@ -4,7 +4,7 @@ import styled from "styled-components"
 const StyledTable = styled.div`
   border: 1px solid var(--color-grey-200);
 
-  font-size: 1.4rem;
+  font-size: 14px;
   background-color: var(--color-grey-0);
   border-radius: 7px;
   overflow: x-auto;
@@ -23,11 +23,11 @@ const StyledHeader = styled(CommonRow)`
 
   background-color: #f4f4f4;
   border-bottom: 1px solid #f9f9f9;
-  text-transform: uppercase;
   letter-spacing: 0.4px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: #333;
+  font-weight: 500;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: #777;
 `
 
 const StyledRow = styled(CommonRow)`
@@ -56,7 +56,7 @@ const Footer = styled.footer`
 `
 
 const Empty = styled.p`
-  font-size: 1rem;
+  font-size: 14px;
   font-weight: 500;
   text-align: center;
   margin: 2.4rem;

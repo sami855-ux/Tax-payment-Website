@@ -24,6 +24,18 @@ import Payment from "./pages/Admin/Payment"
 import Settings from "./pages/Admin/Settings"
 import Report from "@/pages/Admin/Report"
 import Profile from "./pages/Admin/Profile"
+import Taxpayer from "./pages/TaxOfficial/Taxpayer"
+import Notification from "./pages/TaxOfficial/Notification"
+import NotificationUser from "./pages/User/NotificationUser"
+import NotificationAdmin from "./pages/Admin/NotificationAdmin"
+import VerifyTaxFilling from "@/pages/TaxOfficial/VerifyTaxFilling"
+import OfficialPayments from "./pages/TaxOfficial/OfficialPayments"
+import OfficialSettings from "./pages/TaxOfficial/OfficialSettings"
+import OfficialReport from "./pages/TaxOfficial/OfficialReport"
+import ProtectedRoutes from "./ui/ProtectedRoutes"
+import Maintenance from "./pages/Admin/Maintenance"
+import PaymentLog from "./pages/Admin/PaymentLog"
+import TaxSetupWizard from "./pages/User/CompleteTax"
 
 const router = createBrowserRouter([
   {
@@ -79,6 +91,18 @@ const router = createBrowserRouter([
         path: "profile",
         element: <Profile />,
       },
+      {
+        path: "notification",
+        element: <NotificationAdmin />,
+      },
+      {
+        path: "maintenance",
+        element: <Maintenance />,
+      },
+      {
+        path: "payment-log",
+        element: <PaymentLog />,
+      },
     ],
   },
   {
@@ -111,6 +135,14 @@ const router = createBrowserRouter([
         path: "history",
         element: <PaymentHistory />,
       },
+      {
+        path: "notification",
+        element: <NotificationUser />,
+      },
+      {
+        path: "complete-tax-setup",
+        element: <TaxSetupWizard />,
+      },
     ],
   },
   {
@@ -122,6 +154,30 @@ const router = createBrowserRouter([
         path: "dashboard",
         index: true,
         element: <OfficialDashboard />,
+      },
+      {
+        path: "taxpayer",
+        element: <Taxpayer />,
+      },
+      {
+        path: "notification",
+        element: <Notification />,
+      },
+      {
+        path: "taxFilling",
+        element: <VerifyTaxFilling />,
+      },
+      {
+        path: "payments",
+        element: <OfficialPayments />,
+      },
+      {
+        path: "settings",
+        element: <OfficialSettings />,
+      },
+      {
+        path: "report",
+        element: <OfficialReport />,
       },
     ],
   },

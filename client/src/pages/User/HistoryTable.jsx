@@ -4,15 +4,14 @@ import payment from "@/data/payment.json"
 
 function HistoryTable() {
   return (
-    <Table columns="0.5fr 1.3fr 1.5fr 1fr 1fr 1fr">
+    <Table columns="1fr 1.5fr 1.5fr 1fr 1fr 0.5fr">
       <Table.Header>
-        <div></div>
         <div>Tax Category</div>
         <div>Transaction ID</div>
         <div>Tax period</div>
         <div>Date</div>
         <div>Amount paid</div>
-        <div></div>
+        <div>Action</div>
       </Table.Header>
 
       <Table.Body

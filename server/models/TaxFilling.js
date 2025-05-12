@@ -1,0 +1,82 @@
+import mongoose from "mongoose"
+import TaxPayment from "./TaxPayment.js"
+// import TaxRule from "./TaxRule.js"
+
+const taxFilingSchema = new mongoose.Schema(
+  {
+    taxpayer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    taxCategory: {
+      type: String,
+      enum: ["personal", "business", "vat", "property", "other"],
+      required: true,
+    },
+    filingPeriod: {
+      type: String,
+      required: true,
+    },
+    filingDate: {
+      type: Date,
+      default: Date.now,
+    },
+    totalAmount: {
+      type: Number,
+      required: true, // Total tax amount for this filing
+    },
+    status: {
+      type: String,
+      enum: ["pending", "submitted", "approved", "rejected"],
+      default: "pending",
+    },
+    remarks: {
+      type: String,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["unpaid", "paid", "partially_paid"],
+      default: "unpaid",
+    },
+    paymentDate: {
+      type: Date,
+    },
+    paymentPurpose: {
+      type: String,
+      required: true,
+    },
+    documentFiled: {
+      type: String, // URL or file path to the uploaded document (e.g., proof of payment, tax documents)
+      required: false, // Optional field
+    },
+    isLate: {
+      type: Boolean,
+      required: true,
+    },
+    totalAmount: {
+      type: Number,
+    },
+    notes: {
+      type: String, // Additional notes or comments about the tax filing
+      required: false, // Optional field
+    },
+    taxPayments: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TaxPayment",
+      },
+    ],
+    taxRules: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TaxRule",
+      },
+    ],
+  },
+  {
+    timestamps: true,
+  }
+)
+
+export default mongoose.model("TaxFiling", taxFilingSchema)

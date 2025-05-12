@@ -1,16 +1,26 @@
-import { AiOutlineCloseCircle } from "react-icons/ai"
-import { HiOutlineSearch } from "react-icons/hi"
-import { HiBars3CenterLeft } from "react-icons/hi2"
 import { IoMdNotificationsOutline } from "react-icons/io"
-import { useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { AiOutlineCloseCircle } from "react-icons/ai"
+import { HiBars3CenterLeft } from "react-icons/hi2"
+import { HiOutlineSearch } from "react-icons/hi"
+import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
+import { Bell } from "lucide-react"
 
-import hero from "@/assets/logo.png"
+import { fetchNotifications } from "@/redux/slice/notificationSlice"
 import { FiChevronDown } from "react-icons/fi"
-import { useSelector } from "react-redux"
+import hero from "@/assets/logo.png"
 
 export default function Navbar({ onBarClicked }) {
+  const { items, loading } = useSelector((store) => store.notification)
+  const dispatch = useDispatch()
+
   const { user } = useSelector((store) => store.user)
   const [query, setIsQuery] = useState("")
+
+  useEffect(() => {
+    dispatch(fetchNotifications())
+  }, [dispatch])
 
   return (
     <>
@@ -43,12 +53,17 @@ export default function Navbar({ onBarClicked }) {
         </section>
 
         <section className="h-full w-fit flex items-center gap-6">
-          <div className="relative w-7 h-7 flex items-center justify-center">
-            <IoMdNotificationsOutline size={26} />
-            <span className="absolute w-5 h-5 -top-2 -right-2 rounded-full text-sm flex items-center justify-center text-white bg-red-600">
-              3
-            </span>
-          </div>
+          <Link
+            to="notification"
+            className="relative w-7 h-7 flex items-center justify-center"
+          >
+            <Bell size={23} />
+            {!loading && items.length > 0 && (
+              <span className="absolute w-5 h-5 -top-2 -right-2 rounded-full text-sm flex items-center justify-center text-white bg-red-600">
+                {items?.length}
+              </span>
+            )}
+          </Link>
           <div className="w-fit h-full flex items-center space-x-2">
             <img
               src={hero}

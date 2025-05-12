@@ -6,8 +6,12 @@ import { useState } from "react"
 
 import hero from "@/assets/logo.png"
 import { FiChevronDown } from "react-icons/fi"
+import { Link } from "react-router-dom"
+import { useSelector } from "react-redux"
+import { Bell } from "lucide-react"
 
 export default function Navbar({ onBarClicked }) {
+  const { user } = useSelector((store) => store.user)
   const [query, setIsQuery] = useState("")
 
   return (
@@ -41,22 +45,28 @@ export default function Navbar({ onBarClicked }) {
         </section>
 
         <section className="h-full w-fit flex items-center gap-6">
-          <div className="relative w-7 h-7 flex items-center justify-center">
-            <IoMdNotificationsOutline size={26} />
-            <span className="absolute w-5 h-5 -top-2 -right-2 rounded-full text-sm flex items-center justify-center text-white bg-red-600">
+          <Link
+            to={"/official/notification"}
+            className="relative w-7 h-7 flex items-center justify-center"
+          >
+            <Bell size={23} className="hover:text-green-700" />
+            <span className="absolute w-4 h-4 -top-2 -right-2 rounded-full text-[13px] flex items-center justify-center text-white bg-red-600">
               3
             </span>
-          </div>
+          </Link>
           <div className="w-fit h-full flex items-center space-x-2">
             <img
               src={hero}
               alt="Logo"
               className="w-9 h-9 rounded-full cursor-pointer"
             />
-            <section className="">
-              <h2 className="font-semibold text-gray-800 pb-1 text-[15px] cursor-pointer hidden md:block">
-                Samuel Tale
+            <section className="px-4">
+              <h2 className="font-semibold text-gray-800  text-[15px] cursor-pointer hidden md:block">
+                {user?.fullName}
               </h2>
+              <p className="text-[13px] uppercase font-semibold text-green-600">
+                {user?.role}
+              </p>
             </section>
             <FiChevronDown size={22} className="cursor-pointer" />
           </div>

@@ -13,8 +13,26 @@ import {
   LucideWallet,
   LucideWallet2,
 } from "lucide-react"
+import { logoutUser } from "@/services/apiUser"
+import { logout } from "@/redux/slice/userSlice"
+import toast from "react-hot-toast"
+import { useDispatch } from "react-redux"
+import { useNavigate } from "react-router-dom"
 
 export default function Menu() {
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    const res = await logoutUser()
+
+    if (res.success) {
+      dispatch(logout())
+      localStorage.removeItem("userId")
+      toast.success(res.message)
+      navigate("/")
+    }
+  }
   return (
     <>
       <div
@@ -44,17 +62,17 @@ export default function Menu() {
             icon={<HiOutlineHome size={23} />}
           />
           <DashboardLink
+            text={"Taxpayers"}
+            path="/official/taxpayer"
+            icon={<LucideUser2 size={23} />}
+          />
+          <DashboardLink
             text={"Verify Tax Filings"}
             path="/official/taxFilling"
             icon={<LucideClipboardList size={23} />}
           />
           <DashboardLink
-            text={"Taxpayers"}
-            path="/official/taxPayers"
-            icon={<LucideUser2 size={23} />}
-          />
-          <DashboardLink
-            text={"Tax Payments & Transactions"}
+            text={"Tax Payments"}
             path="/official/payments"
             icon={<LucideWallet size={23} />}
           />
@@ -69,19 +87,27 @@ export default function Menu() {
           </li>
           <DashboardLink
             text={"Setting"}
-            path="/official/setting"
+            path="/official/settings"
             icon={<AiOutlineSetting size={23} />}
           />
           <DashboardLink
             text={"Reports & Analytics"}
-            path="/official/help"
+            path="/official/report"
             icon={<LucideBarChart size={23} />}
           />
-          <DashboardLink
-            text={"Logout"}
-            path="/user/logout"
-            icon={<FiLogOut size={23} />}
-          />
+          <li
+            className={`w-[260px] md:w-[65px] lg:w-[260px] relative `}
+            onClick={handleLogout}
+          >
+            <p
+              className={`nav-item flex items-center gap-3.5 px-4 py-3 rounded-md w-full cursor-pointer`}
+            >
+              <span className="icon">
+                <FiLogOut size={23} />
+              </span>
+              <span className={`hidden lg:inline label `}>Logout</span>
+            </p>
+          </li>
         </ul>
       </div>
     </>

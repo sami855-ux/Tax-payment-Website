@@ -33,12 +33,22 @@ const Discount = styled.div`
 function CabinRow({ rowData }) {
   return (
     <Table.Row>
+      <p
+        className={`${
+          rowData.taxCategory === "Income Tax"
+            ? "text-green-600"
+            : "text-blue-600"
+        } text-[13px] uppercase`}
+      >
+        {rowData.taxCategory}
+      </p>
+      <p className="text-[14px] text-center bg-amber-100 text-amber-700 w-28 rounded-2xl py-1">
+        {rowData.transactionId}
+      </p>
+      <p className="text-[14px]">{rowData.taxPeriod}</p>
+      <p className="text-[14px]">{new Date(rowData.date).toDateString()}</p>
+      <p className="text-[14px]">{rowData.amountPaid}</p>
       <p className=""></p>
-      <p className="text-[15px]">{rowData.taxCategory}</p>
-      <p className="text-[15px]">{rowData.transactionId}</p>
-      <p className="text-[15px]">{rowData.taxPeriod}</p>
-      <p className="text-[15px]">{new Date(rowData.date).toDateString()}</p>
-      <p className="text-[15px]">{rowData.amountPaid}</p>
     </Table.Row>
   )
 }

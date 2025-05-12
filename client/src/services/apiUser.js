@@ -216,3 +216,20 @@ export const deleteUserAdmin = async (userId) => {
     return { error: error.response?.data || "Something went wrong" }
   }
 }
+
+export const completeTaxSetup = async (taxData) => {
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_BASE_URL}/api/user/tax-setup`,
+      taxData,
+      {
+        withCredentials: true,
+      }
+    )
+    if (response.data.success) {
+      return response.data
+    }
+  } catch (error) {
+    return { error: error.response?.data || "Something went wrong" }
+  }
+}

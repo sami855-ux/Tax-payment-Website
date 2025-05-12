@@ -31,7 +31,6 @@ const UserSchema = new mongoose.Schema(
     },
     residentialAddress: {
       type: String,
-      required: true,
       trim: true,
     },
     kebele: {
@@ -50,15 +49,54 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    assignedOfficial: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User", // Assuming officials are also in the User model
+    },
     role: {
       type: String,
       enum: ["taxpayer", "official", "admin"],
       default: "taxpayer",
     },
+    taxCategories: {
+      type: [String],
+      enum: ["personal", "business", "vat", "property", "other"],
+    },
+    isTaxSetupComplete: {
+      type: Boolean,
+      default: false,
+    },
+    taxDetails: {
+      personal: {
+        employmentType: String,
+        monthlyIncome: Number,
+        tinNumber: String,
+      },
+      business: {
+        businessType: String,
+        businessName: String,
+        businessLicenseNumber: String,
+        tinNumber: String,
+        annualRevenueEstimate: Number,
+      },
+      vat: {
+        registeredForVAT: Boolean,
+        vatRegistrationNumber: String,
+        expectedMonthlySales: Number,
+      },
+      property: {
+        propertyType: String,
+        propertyValueEstimate: Number,
+        ownershipStatus: String,
+      },
+      other: {
+        description: String,
+      },
+    },
   },
   { timestamps: true }
 )
 
-const user = mongoose.model("user", UserSchema)
+const User = mongoose.model("User", UserSchema)
 
-export default user
+export default User

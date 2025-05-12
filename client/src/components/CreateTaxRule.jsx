@@ -2,6 +2,9 @@ import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { HiPencil, HiSearch } from "react-icons/hi"
 import { FileText, Landmark, TrashIcon } from "lucide-react"
+import { FaPlus, FaTrash } from "react-icons/fa"
+import toast from "react-hot-toast"
+import { createTaxRule } from "@/services/Tax"
 
 // Main Tax Management Component
 export default function ManageTax() {
@@ -54,39 +57,63 @@ export default function ManageTax() {
   const [selectedRule, setSelectedRule] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [ruleToDelete, setRuleToDelete] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   // Form state for creating/editing rules
   const [formData, setFormData] = useState({
     name: "",
     type: "",
-    rate: "",
-    entities: [],
-    startDate: "",
-    endDate: "",
     purpose: "",
-    status: "active",
+    category: "",
+    fixed: "",
+    percentage: "",
+    bracket: [],
+    year: "",
   })
 
-  const handleCreateRule = () => {
-    const newRule = {
-      id: taxRules.length + 1,
-      name: formData.name,
-      type: formData.type,
-      rate: formData.rate,
-      status: formData.status,
-      modifiedDate: new Date().toISOString().split("T")[0],
-      history: [],
+  // Add a new bracket
+  const addBracket = (newBracket) => {
+    setFormData((prev) => ({
+      ...prev,
+      bracket: [...prev.bracket, newBracket],
+    }))
+  }
+
+  // Remove a bracket by index
+  const removeBracket = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      bracket: prev.bracket.filter((_, i) => i !== index),
+    }))
+  }
+
+  const handleCreateRule = async () => {
+    if (
+      !formData.fixed ||
+      !formData.percentage ||
+      formData.bracket.length === 0
+    ) {
+      toast.error("All fields are required. Make sure you put them")
+      return
     }
-    setTaxRules([...taxRules, newRule])
+
+    try {
+      setIsLoading(true)
+      const res = await createTaxRule(formData)
+    } catch (error) {
+    } finally {
+      setIsLoading(false)
+    }
+
     setFormData({
       name: "",
       type: "",
-      rate: "",
-      entities: [],
-      startDate: "",
-      endDate: "",
       purpose: "",
-      status: "active",
+      category: "",
+      fixed: "",
+      percentage: "",
+      bracket: [],
+      year: "",
     })
     setActiveTab("view")
   }
@@ -202,6 +229,8 @@ export default function ManageTax() {
             formData={formData}
             setFormData={setFormData}
             onSubmit={handleCreateRule}
+            addBracket={addBracket}
+            removeBracket={removeBracket}
           />
         )}
 
@@ -345,7 +374,13 @@ function TaxRulesTable({ rules, onEdit, onDelete }) {
 }
 
 // Component for creating new tax rules
-function CreateTaxRule({ formData, setFormData, onSubmit }) {
+function CreateTaxRule({
+  formData,
+  setFormData,
+  onSubmit,
+  removeBracket,
+  addBracket,
+}) {
   const [step, setStep] = useState(1)
 
   return (
@@ -386,7 +421,7 @@ function CreateTaxRule({ formData, setFormData, onSubmit }) {
           <div className="mb-4">
             <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
               <FileText size={20} />{" "}
-              <span className="font-semibold text-gray-800">Tax Name</span>
+              <span className="font-semibold text-gray-800">Name</span>
             </label>
             <motion.input
               type="text"
@@ -394,9 +429,28 @@ function CreateTaxRule({ formData, setFormData, onSubmit }) {
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              placeholder="e.g., VAT, Income Tax"
+              placeholder="Standard Income Rule 2017"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-200 outline-none"
             />
+          </div>
+          <div className="mb-4">
+            <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <Landmark size={20} />{" "}
+              <span className="font-semibold text-gray-800">Tax Category</span>
+            </label>
+            <select
+              value={formData.category}
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-200 outline-none"
+            >
+              <option value="">Select tax category</option>
+              <option value="Fixed">Personal</option>
+              <option value="Percentage">Property</option>
+              <option value="Progressive">VAT</option>
+              <option value="Progressive">Business</option>
+            </select>
           </div>
           <div className="mb-4">
             <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
@@ -421,42 +475,29 @@ function CreateTaxRule({ formData, setFormData, onSubmit }) {
 
       {step === 2 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              🧮 Applicable Rate/Formula
-            </label>
-            <motion.input
-              type="text"
-              value={formData.rate}
+          {formData.type === "Fixed" && (
+            <FixedTaxRuleForm
+              value={formData.fixed}
               onChange={(e) =>
-                setFormData({ ...formData, rate: e.target.value })
+                setFormData({ ...formData, fixed: e.target.value })
               }
-              placeholder="e.g., 15% or complex formula"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-200 outline-none"
             />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              🏛️ Applicable Entities
-            </label>
-            <select
-              multiple
-              value={formData.entities}
-              onChange={(e) => {
-                const options = Array.from(
-                  e.target.selectedOptions,
-                  (option) => option.value
-                )
-                setFormData({ ...formData, entities: options })
-              }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-200 outline-none"
-            >
-              <option value="Individuals">Individuals</option>
-              <option value="Businesses">Businesses</option>
-              <option value="Non-Profits">Non-Profits</option>
-              <option value="Government">Government</option>
-            </select>
-          </div>
+          )}
+          {formData.type === "Percentage" && (
+            <PercentageTaxRuleForm
+              value={formData.percentage}
+              onChange={(e) =>
+                setFormData({ ...formData, percentage: e.target.value })
+              }
+            />
+          )}
+          {formData.type === "Progressive" && (
+            <ProgressiveTaxRuleForm
+              brackets={formData.bracket}
+              removeBracket={removeBracket}
+              addBracket={addBracket}
+            />
+          )}
         </motion.div>
       )}
 
@@ -465,30 +506,13 @@ function CreateTaxRule({ formData, setFormData, onSubmit }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                📅 Effective Date
+                📅 Year
               </label>
               <motion.input
                 type="date"
-                value={formData.startDate}
+                value={formData.year}
                 onChange={(e) =>
-                  setFormData({ ...formData, startDate: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                whileFocus={{
-                  scale: 1.01,
-                  boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.5)",
-                }}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                📅 Expiry Date
-              </label>
-              <motion.input
-                type="date"
-                value={formData.endDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, endDate: e.target.value })
+                  setFormData({ ...formData, year: e.target.value })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 whileFocus={{
@@ -507,7 +531,7 @@ function CreateTaxRule({ formData, setFormData, onSubmit }) {
               onChange={(e) =>
                 setFormData({ ...formData, purpose: e.target.value })
               }
-              placeholder="Define how and when this tax should be applied"
+              placeholder="Define how and when this tax should be applied (optional)"
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               whileFocus={{
@@ -535,13 +559,221 @@ function CreateTaxRule({ formData, setFormData, onSubmit }) {
           whileTap={{ scale: 0.95 }}
           className={`px-10 py-2 rounded-lg ml-auto cursor-pointer ${
             step < 3 ? "bg-blue-500 text-white" : "bg-green-500 text-white"
-          }`}
+          }
+          ${
+            step == 1
+              ? formData.name && formData.type && formData.category
+                ? ""
+                : "cursor-not-allowed bg-gray-200"
+              : ""
+          }
+         
+          `}
           onClick={() => (step < 3 ? setStep(step + 1) : onSubmit())}
         >
           {step < 3 ? "Continue" : "Create Tax Rule"}
         </motion.button>
       </motion.div>
     </motion.div>
+  )
+}
+
+function ProgressiveTaxRuleForm({ brackets = [], addBracket, removeBracket }) {
+  console.log(brackets)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newBracket, setNewBracket] = useState({
+    minAmount: "",
+    maxAmount: "",
+    rate: "",
+  })
+
+  const handleAddClick = () => {
+    if (brackets.length == 0) {
+      // For the first bracket, just show the form with empty values
+      setNewBracket({
+        minAmount: "0",
+        maxAmount: "",
+        rate: "",
+      })
+    } else {
+      const lastBracket = brackets[brackets.length - 1]
+      // Set minAmount to last maxAmount + 1 if last maxAmount exists and is a number
+      const newMin =
+        lastBracket.maxAmount && !isNaN(lastBracket.maxAmount)
+          ? parseInt(lastBracket.maxAmount) + 1
+          : ""
+
+      setNewBracket({
+        minAmount: newMin,
+        maxAmount: "",
+        rate: "",
+      })
+    }
+    setShowAddForm(true)
+  }
+
+  const handleSaveNewBracket = () => {
+    if (
+      newBracket.minAmount !== "" &&
+      newBracket.maxAmount !== "" &&
+      newBracket.rate !== ""
+    ) {
+      addBracket(newBracket)
+      console.log(brackets)
+      setShowAddForm(false)
+    } else {
+      alert("Please fill in all fields before saving the bracket.")
+    }
+  }
+
+  const handleCancelAdd = () => {
+    setShowAddForm(false)
+  }
+
+  const handleNewBracketChange = (field, value) => {
+    setNewBracket((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  return (
+    <div className="space-y-4">
+      <label className="block text-sm font-medium text-gray-700">
+        Progressive Brackets
+      </label>
+
+      {/* Display existing brackets */}
+      <div className="space-y-2">
+        {brackets && brackets.length > 0 ? (
+          brackets.map((bracket, index) => (
+            <div key={index} className="grid grid-cols-3 gap-2 items-center">
+              <div className="p-2 border border-gray-300 rounded-xl bg-gray-50">
+                {bracket.minAmount}
+              </div>
+              <div className="p-2 border border-gray-300 rounded-xl bg-gray-50">
+                {bracket.maxAmount}
+              </div>
+              <div className="flex gap-2 items-center">
+                <div className="w-full p-2 border border-gray-300 rounded-xl bg-gray-50">
+                  {bracket.rate}%
+                </div>
+                {index > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => removeBracket(index)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <FaTrash />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-500">No brackets added yet.</p>
+        )}
+      </div>
+
+      {/* Add new bracket form (shown when clicking Add button) */}
+      {showAddForm && (
+        <div className="space-y-2 p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <div className="grid grid-cols-3 gap-2 items-center">
+            <input
+              type="number"
+              placeholder="Min Amount"
+              value={newBracket.minAmount}
+              disabled={true}
+              onChange={(e) =>
+                handleNewBracketChange("minAmount", e.target.value)
+              }
+              className="p-2 border border-gray-300 rounded-xl disabled:bg-gray-100 disabled:cursor-not-allowed focus:ring-blue-500 focus:ring-2"
+            />
+            <input
+              type="number"
+              placeholder="Max Amount"
+              value={newBracket.maxAmount}
+              onChange={(e) =>
+                handleNewBracketChange("maxAmount", e.target.value)
+              }
+              className="p-2 border border-gray-300 rounded-xl focus:ring-blue-500 focus:ring-2"
+            />
+            <div className="flex gap-2 items-center">
+              <input
+                type="number"
+                placeholder="Rate (%)"
+                value={newBracket.rate}
+                onChange={(e) => handleNewBracketChange("rate", e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-xl focus:ring-blue-500 focus:ring-2"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end mt-2">
+            <button
+              type="button"
+              onClick={handleCancelAdd}
+              className="px-3 py-1 text-gray-600 hover:text-gray-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveNewBracket}
+              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Add Bracket button */}
+      <button
+        type="button"
+        onClick={handleAddClick}
+        className="flex items-center gap-2 text-blue-600 font-medium hover:underline mt-2"
+      >
+        <FaPlus /> Add Bracket
+      </button>
+    </div>
+  )
+}
+
+function PercentageTaxRuleForm({ value, onChange }) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">
+        Percentage Rate (%)
+      </label>
+      <input
+        type="number"
+        name="percentageRate"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+        placeholder="Enter rate e.g. 15"
+        min={0}
+        max={100}
+      />
+    </div>
+  )
+}
+
+function FixedTaxRuleForm({ value, onChange }) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">
+        Fixed Amount
+      </label>
+      <input
+        type="number"
+        name="fixedAmount"
+        value={value}
+        onChange={onChange}
+        className="w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+        placeholder="Enter fixed tax amount"
+      />
+    </div>
   )
 }
 

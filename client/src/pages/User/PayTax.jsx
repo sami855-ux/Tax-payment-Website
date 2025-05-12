@@ -4,24 +4,26 @@ import { motion } from "framer-motion"
 import BillingReceiptPreview from "./BillingView"
 import { cn } from "@/helpers/util"
 import Modal from "@/ui/Modal"
+import { useSelector } from "react-redux"
 
-const taxTypes = [
-  {
-    id: "income",
-    name: "Income Tax",
-    description: "Personal or Business earnings",
-  },
-  {
-    id: "business",
-    name: "Business Tax",
-    description: "Corporate tax filings",
-  },
-  {
-    id: "property",
-    name: "Property Tax",
-    description: "Land and building taxes",
-  },
-]
+const buildTaxTypesFromSchedules = (schedules) => {
+  const uniqueCategories = new Set()
+  const taxTypes = []
+
+  schedules.forEach((schedule) => {
+    if (!uniqueCategories.has(schedule.taxCategory)) {
+      uniqueCategories.add(schedule.taxCategory)
+
+      taxTypes.push({
+        id: schedule.taxCategory,
+        name: schedule.taxCategory,
+        description: schedule.taxCategory,
+      })
+    }
+  })
+
+  return taxTypes
+}
 
 const paymentOptions = [
   {
@@ -43,6 +45,10 @@ const paymentOptions = [
 ]
 
 export default function PayTax() {
+  const { schedules } = useSelector((store) => store.filled)
+
+  const taxTypes = buildTaxTypesFromSchedules(schedules)
+
   const [selected, setSelected] = useState("full")
   const [partialAmount, setPartialAmount] = useState("")
   const [scheduledDate, setScheduledDate] = useState("")
@@ -52,19 +58,28 @@ export default function PayTax() {
 
   return (
     <>
-      <div className="bg-gray-300 min-h-screen p-4">
-        <section className="w-full h-14 flex items-center justify-between pr-5 py-3">
-          <h2 className="font-semibold text-2xl text-gray-800">Pay tax</h2>
-        </section>
+      <div className="bg-white min-h-screen p-6">
+        <motion.section
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full min-h-14  pr-5 py-3"
+        >
+          <h2 className="font-semibold text-3xl text-gray-800 pb-2">Pay tax</h2>
+          <p className="text-gray-700">
+            Set up your account and get ready to pay taxes.
+          </p>
+        </motion.section>
 
-        <div className="tax-pay-page p-6 flex flex-col gap-6">
+        <motion.div
+          layout
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          className="tax-pay-page py-6 flex flex-col gap-6"
+        >
           {/* 1. Payment Summary Overview */}
-          <motion.section
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="w-[90%] min-h-fit bg-slate-50 shadow-md rounded-lg p-4 mb-6"
-          >
+          <section className="w-[90%] min-h-fit bg-slate-50 shadow-md rounded-lg p-4 mb-6">
             <h2 className="text-lg text-gray-700 font-semibold mb-4">
               Payment Summary
             </h2>
@@ -147,15 +162,10 @@ export default function PayTax() {
             </div>
             {/* Outstanding Balance, Breakdown, Due Date, Payment Status */}
             {/* Include a table or simple list */}
-          </motion.section>
+          </section>
 
           {/* 2. Payment Options */}
-          <motion.section
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="payment-options card"
-          >
+          <section className="payment-options card">
             <h2 className="text-lg text-gray-700 font-semibold mb-4">
               How would you like to pay
             </h2>
@@ -206,7 +216,7 @@ export default function PayTax() {
             </div>
             {/* Full Amount, Partial Amount input, Scheduled Payment, Installment Plan */}
             {/* Radio buttons or tab switcher */}
-          </motion.section>
+          </section>
 
           {/* 3. Select Tax Type to Pay */}
           <motion.section
@@ -231,7 +241,9 @@ export default function PayTax() {
               }
               hover:shadow-md`}
                 >
-                  <div className="text-[16px] font-semibold">{tax.name}</div>{" "}
+                  <div className="text-[17px] font-semibold capitalize">
+                    {tax.name}
+                  </div>{" "}
                   <div className="text-sm text-gray-500">{tax.description}</div>
                 </div>
               ))}
@@ -280,7 +292,7 @@ export default function PayTax() {
               Confirm & Pay
             </button>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       <motion.div
@@ -499,8 +511,6 @@ function OptionCard({ id, title, desc, selected, onClick, children }) {
       onClick={onClick}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
       className={cn(
         "cursor-pointer w-[90%] border rounded-xl p-4 transition-all duration-200 shadow-sm hover:shadow-md",

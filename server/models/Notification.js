@@ -4,35 +4,42 @@ const notificationSchema = new mongoose.Schema(
   {
     recipient: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      refPath: "recipientModel",
       required: true,
     },
-    title: { type: String, required: true },
-    message: { type: String, required: true },
+    recipientModel: {
+      type: String,
+      enum: ["taxpayer", "official", "admin"],
+      required: true,
+    },
+    sender: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User", // Optional: could be Admin or Official
+    },
     type: {
       type: String,
-      enum: ["reminder", "alert", "payment", "system"],
-      default: "system",
+      enum: ["reminder", "warning", "info", "success"],
+      default: "info",
     },
-    relatedEntity: {
-      // Link to tax filings, payments etc.
-      type: mongoose.Schema.Types.ObjectId,
-      refPath: "entityModel",
-    },
-    entityModel: {
-      // Dynamic reference
+    message: {
       type: String,
-      enum: ["TaxFiling", "Payment", "Taxpayer"],
+      required: true,
     },
-    isRead: { type: Boolean, default: false },
-    priority: { type: Number, default: 1 }, // 1-5 (5 = highest)
-    expiresAt: Date, // For time-sensitive notifications
+    link: {
+      type: String, // e.g., `/dashboard/filings/123`
+    },
+    read: {
+      type: Boolean,
+      default: false,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 )
-
-// Indexes for faster queries
-notificationSchema.index({ recipient: 1, isRead: 1 })
-notificationSchema.index({ createdAt: -1 })
 
 export default mongoose.model("Notification", notificationSchema)

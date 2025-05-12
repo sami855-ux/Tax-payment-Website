@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   PieChart,
   Pie,
@@ -30,6 +30,9 @@ import {
   Download,
   Map,
 } from "lucide-react"
+import { useDispatch } from "react-redux"
+import { login } from "@/redux/slice/userSlice"
+import { getUserById } from "@/services/apiUser"
 
 // Sample data
 const timelineData = [
@@ -58,8 +61,8 @@ const activityData = [
 const COLORS = ["#0088FE", "#FFBB28", "#FF8042", "#00C49F"]
 
 const Card = ({ title, value, icon }) => (
-  <div className="bg-white rounded-lg shadow-sm p-6 flex items-center border border-gray-200 hover:shadow-md transition-shadow">
-    <div className="p-3 rounded-full bg-blue-200 text-blue-600 mr-4">
+  <div className="bg-white rounded-lg shadow-sm p-6 flex items-center border border-green-100 hover:shadow-md transition-shadow">
+    <div className="p-3 rounded-full bg-green-200 text-green-600 mr-4">
       {icon}
     </div>
     <div>
@@ -85,7 +88,7 @@ const ActivityItem = ({ type, name, amount }) => {
   return (
     <div className="py-2 border-b border-gray-200 last:border-0 flex gap-2 items-center">
       <span className="mr-2">{icons[type]}</span>
-      <span className="font-medium">{name}</span> {descriptions[type]}{" "}
+      <span className="font-medium w-32">{name}</span> {descriptions[type]}{" "}
       {amount && (
         <span className="font-semibold">{amount.toLocaleString()}</span>
       )}
@@ -106,13 +109,45 @@ const QuickActionButton = ({ icon, label }) => (
 
 export default function OfficialDashboard() {
   const [activeIndex, setActiveIndex] = useState(0)
+  const dispatch = useDispatch()
+
+  useEffect(() => {
+    document.title = "Admin dashboard"
+
+    const getUserInfo = async () => {
+      const res = await getUserById()
+
+      if (res.success) {
+        dispatch(
+          login({
+            user: res.user,
+          })
+        )
+      }
+    }
+
+    getUserInfo()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-7">Dashboard</h1>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className=""
+      >
+        <h1 className="text-2xl font-bold text-gray-800 mb-7">Dashboard</h1>
+      </motion.div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 mb-6">
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 mb-6"
+      >
         <Card
           title="Total Tax Collected"
           value="ETB 1,240,000"
@@ -139,9 +174,16 @@ export default function OfficialDashboard() {
           icon={<FiUsers size={30} />}
         />
         <Card title="Notices Sent" value="36" icon={<FiBell size={30} />} />
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6"
+      >
         {/* Timeline Chart */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 lg:col-span-2">
           <h2 className="text-lg text-gray-800 font-bold mb-4">
@@ -226,7 +268,7 @@ export default function OfficialDashboard() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Activity Feed */}
