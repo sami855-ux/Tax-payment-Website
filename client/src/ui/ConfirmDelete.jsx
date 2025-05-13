@@ -1,5 +1,7 @@
 import styled from "styled-components"
 import Button from "./Button"
+import { Trash2Icon, TrashIcon } from "lucide-react"
+import { FaTrash } from "react-icons/fa"
 
 const StyledConfirmDelete = styled.div`
   width: 40rem;
@@ -23,7 +25,8 @@ const StyledConfirmDelete = styled.div`
 
 function ConfirmDelete({ resourceName, onConfirm, onCloseModal }) {
   return (
-    <StyledConfirmDelete>
+    <StyledConfirmDelete className="border border-gray-200 shadow-2xl">
+      <FaTrash size={30} color="red" />
       <h3 className="py-2 font-semibold text-2xl">Delete {resourceName}</h3>
       <p>
         Are you sure you want to delete this {resourceName} permanently? This

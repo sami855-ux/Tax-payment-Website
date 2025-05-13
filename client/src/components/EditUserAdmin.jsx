@@ -18,7 +18,7 @@ export default function EditUserAdmin({ user, onCloseModal }) {
   })
 
   return (
-    <div className="w-[600px] h-[50vh] bg-gray-100 p-7 border border-gray-400">
+    <div className="w-[600px] h-[50vh] bg-gray-100 p-7 border border-gray-300 rounded-2xl">
       <h2 className="font-semibold text-gray-800 pb-6 text-2xl">
         Assign new role
       </h2>

@@ -233,3 +233,66 @@ export const completeTaxSetup = async (taxData) => {
     return { error: error.response?.data || "Something went wrong" }
   }
 }
+
+export const assignOfficial = async (taxpayerId, officialId) => {
+  try {
+    const response = await axios.patch(
+      `${import.meta.env.VITE_BASE_URL}/api/user/assign`,
+      { taxpayerId, officialId },
+      { withCredentials: true }
+    )
+
+    if (response.data.success) {
+      return response.data
+    } else {
+      return { error: response.data.error || "Assignment failed" }
+    }
+  } catch (err) {
+    console.error(
+      "Failed to assign official:",
+      err?.response?.data || err.message
+    )
+    return {
+      error: err?.response?.data?.error || "Network or server error",
+      status: err?.response?.status,
+    }
+  }
+}
+export const getTaxpayersByOfficial = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/api/user/get-taxpayer`,
+      { withCredentials: true }
+    )
+
+    if (response.data.success) {
+      return response.data.taxpayers
+    } else {
+      return { error: response.data.error || "Assignment failed" }
+    }
+  } catch (err) {
+    console.error(
+      "Failed to assign official:",
+      err?.response?.data || err.message
+    )
+    return {
+      error: err?.response?.data?.error || "Network or server error",
+      status: err?.response?.status,
+    }
+  }
+}
+
+export const fetchAllOfficials = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/api/user/official `,
+      {
+        withCredentials: true,
+      }
+    ) // Adjust the endpoint as needed
+    return response.data.officials
+  } catch (error) {
+    console.error("Error fetching officials:", error)
+    return error
+  }
+}

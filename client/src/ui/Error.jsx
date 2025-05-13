@@ -7,7 +7,7 @@ export default function Error() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-amber-50 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+      <div className="max-w-2xl w-full bg-white rounded-xl  overflow-hidden transition-all duration-300 hover:shadow-xl">
         <div className="p-8 text-center">
           <div className="flex justify-center mt-5">
             <img

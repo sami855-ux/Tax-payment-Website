@@ -1,59 +1,26 @@
-import { useState, useRef, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { HiPencil, HiSearch } from "react-icons/hi"
-import { FileText, Landmark, TrashIcon } from "lucide-react"
+import { FileText, Landmark, Loader, Loader2, TrashIcon } from "lucide-react"
 import { FaPlus, FaTrash } from "react-icons/fa"
 import toast from "react-hot-toast"
-import { createTaxRule } from "@/services/Tax"
+import {
+  createTaxRule,
+  deleteTaxRule,
+  getAllTaxRules,
+  updateTaxRule,
+} from "@/services/Tax"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import Spinner from "@/ui/Spinner"
 
-// Main Tax Management Component
 export default function ManageTax() {
+  const queryClient = useQueryClient()
+  const { data } = useQuery({
+    queryKey: ["tax-rule"],
+    queryFn: getAllTaxRules,
+  })
+
   const [activeTab, setActiveTab] = useState("view")
-  const [taxRules, setTaxRules] = useState([
-    {
-      id: 1,
-      name: "VAT",
-      type: "Percentage",
-      rate: "15%",
-      status: "active",
-      modifiedDate: "2023-05-15",
-      history: [],
-    },
-    {
-      id: 2,
-      name: "Income Tax",
-      type: "Progressive",
-      rate: "10-35%",
-      status: "active",
-      modifiedDate: "2023-04-10",
-      history: [],
-    },
-    {
-      id: 3,
-      name: "Property Tax",
-      type: "Fixed",
-      rate: "$1,200",
-      status: "archived",
-      modifiedDate: "2022-11-30",
-      history: [],
-    },
-  ])
-  const [scheduledChanges, setScheduledChanges] = useState([
-    {
-      id: 1,
-      taxName: "VAT",
-      currentRate: "15%",
-      newRate: "17%",
-      effectiveDate: "2024-01-01",
-    },
-    {
-      id: 2,
-      taxName: "Luxury Tax",
-      currentRate: "10%",
-      newRate: "12%",
-      effectiveDate: "2023-10-01",
-    },
-  ])
   const [selectedRule, setSelectedRule] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [ruleToDelete, setRuleToDelete] = useState(null)
@@ -65,10 +32,11 @@ export default function ManageTax() {
     type: "",
     purpose: "",
     category: "",
-    fixed: "",
-    percentage: "",
+    fixed: 0,
+    percentage: 0,
     bracket: [],
     year: "",
+    isActive: false,
   })
 
   // Add a new bracket
@@ -88,19 +56,29 @@ export default function ManageTax() {
   }
 
   const handleCreateRule = async () => {
-    if (
-      !formData.fixed ||
-      !formData.percentage ||
-      formData.bracket.length === 0
-    ) {
+    if (formData.type === "Fixed" && !formData.fixed) {
       toast.error("All fields are required. Make sure you put them")
+      return
+    }
+    if (formData.type === "Progressive" && formData.bracket.length === 0) {
+      toast.error("All fields are required. Make sure you put them 11")
+      return
+    }
+    if (formData.type === "Percentage" && !formData.percentage) {
+      toast.error("All fields are required. Make sure you put them 11")
       return
     }
 
     try {
       setIsLoading(true)
       const res = await createTaxRule(formData)
+
+      if (res.success) {
+        toast.success(res.message)
+        queryClient.invalidateQueries(["tax-rule"])
+      }
     } catch (error) {
+      console.log(error)
     } finally {
       setIsLoading(false)
     }
@@ -110,55 +88,19 @@ export default function ManageTax() {
       type: "",
       purpose: "",
       category: "",
-      fixed: "",
-      percentage: "",
+      fixed: 0,
+      percentage: 0,
       bracket: [],
       year: "",
     })
     setActiveTab("view")
   }
 
-  const handleUpdateRule = () => {
-    const updatedRules = taxRules.map((rule) => {
-      if (rule.id === selectedRule.id) {
-        return {
-          ...rule,
-          name: formData.name,
-          type: formData.type,
-          rate: formData.rate,
-          status: formData.status,
-          modifiedDate: new Date().toISOString().split("T")[0],
-          history: [
-            ...rule.history,
-            {
-              version: `v${rule.history.length + 1}`,
-              date: new Date().toLocaleDateString(),
-              user: "Admin User",
-            },
-          ],
-        }
-      }
-      return rule
-    })
-    setTaxRules(updatedRules)
-    setSelectedRule(null)
-  }
+  const handleArchiveRule = (id) => {}
 
-  const handleDeleteRule = (id) => {
-    setTaxRules(taxRules.filter((rule) => rule.id !== id))
-    setShowDeleteConfirm(false)
-  }
-
-  const handleArchiveRule = (id) => {
-    const updatedRules = taxRules.map((rule) => {
-      if (rule.id === id) {
-        return { ...rule, status: "archived" }
-      }
-      return rule
-    })
-    setTaxRules(updatedRules)
-    setShowDeleteConfirm(false)
-  }
+  useEffect(() => {
+    document.title = "Manage and create tax"
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -176,7 +118,7 @@ export default function ManageTax() {
 
         {/* Tab Navigation */}
         <motion.div className="flex border-b border-gray-200 mb-8">
-          {["view", "create", "schedule"].map((tab) => (
+          {["view", "create"].map((tab) => (
             <motion.button
               key={tab}
               className={`px-6 py-3 font-medium relative cursor-pointer ${
@@ -202,18 +144,19 @@ export default function ManageTax() {
         {/* View Tax Rules */}
         {activeTab === "view" && (
           <TaxRulesTable
-            rules={taxRules}
+            rules={data || []}
             onEdit={(rule) => {
               setSelectedRule(rule)
               setFormData({
                 name: rule.name,
                 type: rule.type,
-                rate: rule.rate,
-                status: rule.status,
-                entities: [],
-                startDate: "",
-                endDate: "",
-                purpose: "",
+                status: rule.isActive,
+                year: rule.year,
+                purpose: rule.purpose,
+                category: rule.category,
+                fixed: rule.fixed || 0,
+                percentage: rule.percentage || 0,
+                bracket: rule.bracket.length > 0 ? rule.bracket : [],
               })
             }}
             onDelete={(id) => {
@@ -231,14 +174,7 @@ export default function ManageTax() {
             onSubmit={handleCreateRule}
             addBracket={addBracket}
             removeBracket={removeBracket}
-          />
-        )}
-
-        {/* Schedule Tax Updates */}
-        {activeTab === "schedule" && (
-          <TaxScheduleTimeline
-            scheduledChanges={scheduledChanges}
-            onAddNew={() => console.log("Add new schedule")}
+            isLoading={isLoading}
           />
         )}
 
@@ -246,17 +182,16 @@ export default function ManageTax() {
         {selectedRule && (
           <EditTaxRuleModal
             rule={selectedRule}
-            formData={formData}
-            setFormData={setFormData}
             onClose={() => setSelectedRule(null)}
-            onSave={handleUpdateRule}
           />
         )}
 
         {/* Delete/Archive Confirmation Modal */}
         {showDeleteConfirm && (
           <DeleteConfirmation
-            ruleName={taxRules.find((r) => r.id === ruleToDelete)?.name || ""}
+            rule={selectedRule}
+            ruleToDelete={ruleToDelete}
+            ruleName={data.find((r) => r.id === ruleToDelete)?.name || ""}
             onConfirm={() => handleArchiveRule(ruleToDelete)}
             onCancel={() => setShowDeleteConfirm(false)}
           />
@@ -270,12 +205,31 @@ export default function ManageTax() {
 function TaxRulesTable({ rules, onEdit, onDelete }) {
   const [filter, setFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [typeFilter, setTypeFilter] = useState("all")
 
-  const filteredRules = rules.filter(
-    (rule) =>
-      rule.name.toLowerCase().includes(filter.toLowerCase()) &&
-      (statusFilter === "all" || rule.status === statusFilter)
-  )
+  const filteredRules = rules?.filter((rule) => {
+    const matchesSearch = rule.name.toLowerCase().includes(filter.toLowerCase())
+    const matchesStatus =
+      statusFilter === "all" || rule.isActive === (statusFilter === "active")
+    const matchesType = typeFilter === "all" || rule.type === typeFilter
+
+    return matchesSearch && matchesStatus && matchesType
+  })
+
+  const getRateDisplay = (rule) => {
+    switch (rule.type) {
+      case "Fixed":
+        return `$${rule.fixedAmount?.toFixed(2) || "0.00"}`
+      case "Percentage":
+        return `${rule.percentageRate?.toFixed(2) || "0.00"}%`
+      case "Progressive":
+        return `${rule.brackets?.length || 0} brackets (${
+          rule.brackets?.[0]?.rate || "0"
+        }% - ${rule.brackets?.[rule.brackets?.length - 1]?.rate || "0"}%)`
+      default:
+        return "N/A"
+    }
+  }
 
   return (
     <motion.div
@@ -291,14 +245,28 @@ function TaxRulesTable({ rules, onEdit, onDelete }) {
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               placeholder="Search by tax name..."
-              className="w-[90%] px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-200 outline-none"
+              className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-200 outline-none"
             />
             <div className="absolute left-3 top-2.5 text-gray-400">
               <HiSearch size={20} />
             </div>
           </div>
         </motion.div>
-        <motion.div whileHover={{ scale: 1.01 }}>
+
+        <motion.div whileHover={{ scale: 1.01 }} className="w-full md:w-auto">
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-200 outline-none"
+          >
+            <option value="all">All Types</option>
+            <option value="Fixed">Fixed</option>
+            <option value="Percentage">Percentage</option>
+            <option value="Progressive">Progressive</option>
+          </select>
+        </motion.div>
+
+        <motion.div whileHover={{ scale: 1.01 }} className="w-full md:w-auto">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -317,29 +285,35 @@ function TaxRulesTable({ rules, onEdit, onDelete }) {
         animate={{ y: 0 }}
       >
         <div className="grid grid-cols-12 bg-gray-200 p-4 font-medium border-b border-gray-200">
-          <div className="col-span-4 text-gray-800">Tax Name</div>
+          <div className="col-span-3 text-gray-800">Tax Name</div>
+          <div className="col-span-2 text-gray-800">Category</div>
           <div className="col-span-2 text-gray-800">Type</div>
           <div className="col-span-2 text-gray-800">Rate/Amount</div>
-          <div className="col-span-2 text-gray-800">Status</div>
-          <div className="col-span-2 text-gray-800">Actions</div>
+          <div className="col-span-1 text-gray-800">Year</div>
+          <div className="col-span-1 text-gray-800">Status</div>
+          <div className="col-span-1 text-gray-800">Actions</div>
         </div>
 
-        {filteredRules.length > 0 ? (
-          filteredRules.map((rule, i) => (
+        {filteredRules?.length > 0 ? (
+          filteredRules?.map((rule, i) => (
             <motion.div
-              key={rule.id}
+              key={rule._id || rule.id}
               className="grid grid-cols-12 p-4 border-b border-gray-200 hover:bg-blue-50 items-center"
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.05 }}
             >
-              <div className="col-span-4 font-medium">{rule.name}</div>
+              <div className="col-span-3 font-medium">{rule.name}</div>
+              <div className="col-span-2">{rule.category}</div>
               <div className="col-span-2">{rule.type}</div>
-              <div className="col-span-2">{rule.rate}</div>
-              <div className="col-span-2">
-                <StatusBadge status={rule.status} />
+              <div className="col-span-2">{getRateDisplay(rule)}</div>
+              <div className="col-span-1">
+                {rule.year ? new Date(rule.year).getFullYear() : "N/A"}
               </div>
-              <div className="col-span-2 flex gap-2">
+              <div className="col-span-1">
+                <StatusBadge status={rule.isActive ? "active" : "archived"} />
+              </div>
+              <div className="col-span-1 flex gap-2">
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -352,7 +326,7 @@ function TaxRulesTable({ rules, onEdit, onDelete }) {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   className="text-red-500 hover:text-red-700 cursor-pointer"
-                  onClick={() => onDelete(rule.id)}
+                  onClick={() => onDelete(rule._id || rule.id)}
                 >
                   <TrashIcon size={20} />
                 </motion.button>
@@ -380,6 +354,7 @@ function CreateTaxRule({
   onSubmit,
   removeBracket,
   addBracket,
+  isLoading,
 }) {
   const [step, setStep] = useState(1)
 
@@ -446,10 +421,10 @@ function CreateTaxRule({
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-200 outline-none"
             >
               <option value="">Select tax category</option>
-              <option value="Fixed">Personal</option>
-              <option value="Percentage">Property</option>
-              <option value="Progressive">VAT</option>
-              <option value="Progressive">Business</option>
+              <option value="Personal">Personal</option>
+              <option value="Property">Property</option>
+              <option value="VAT">VAT</option>
+              <option value="Business">Business</option>
             </select>
           </div>
           <div className="mb-4">
@@ -479,7 +454,7 @@ function CreateTaxRule({
             <FixedTaxRuleForm
               value={formData.fixed}
               onChange={(e) =>
-                setFormData({ ...formData, fixed: e.target.value })
+                setFormData({ ...formData, fixed: parseFloat(e.target.value) })
               }
             />
           )}
@@ -487,7 +462,10 @@ function CreateTaxRule({
             <PercentageTaxRuleForm
               value={formData.percentage}
               onChange={(e) =>
-                setFormData({ ...formData, percentage: e.target.value })
+                setFormData({
+                  ...formData,
+                  percentage: parseFloat(e.target.value),
+                })
               }
             />
           )}
@@ -571,7 +549,16 @@ function CreateTaxRule({
           `}
           onClick={() => (step < 3 ? setStep(step + 1) : onSubmit())}
         >
-          {step < 3 ? "Continue" : "Create Tax Rule"}
+          {step < 3 ? (
+            "Continue"
+          ) : isLoading ? (
+            <span>
+              <Loader className="animate-spin"></Loader>
+              Creating tax rule...
+            </span>
+          ) : (
+            "Create Tax Rule"
+          )}
         </motion.button>
       </motion.div>
     </motion.div>
@@ -579,21 +566,20 @@ function CreateTaxRule({
 }
 
 function ProgressiveTaxRuleForm({ brackets = [], addBracket, removeBracket }) {
-  console.log(brackets)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newBracket, setNewBracket] = useState({
-    minAmount: "",
-    maxAmount: "",
-    rate: "",
+    minAmount: 0,
+    maxAmount: 0,
+    rate: 0,
   })
 
   const handleAddClick = () => {
     if (brackets.length == 0) {
       // For the first bracket, just show the form with empty values
       setNewBracket({
-        minAmount: "0",
-        maxAmount: "",
-        rate: "",
+        minAmount: 0,
+        maxAmount: 0,
+        rate: 0,
       })
     } else {
       const lastBracket = brackets[brackets.length - 1]
@@ -605,8 +591,8 @@ function ProgressiveTaxRuleForm({ brackets = [], addBracket, removeBracket }) {
 
       setNewBracket({
         minAmount: newMin,
-        maxAmount: "",
-        rate: "",
+        maxAmount: 0,
+        rate: 0,
       })
     }
     setShowAddForm(true)
@@ -619,7 +605,6 @@ function ProgressiveTaxRuleForm({ brackets = [], addBracket, removeBracket }) {
       newBracket.rate !== ""
     ) {
       addBracket(newBracket)
-      console.log(brackets)
       setShowAddForm(false)
     } else {
       alert("Please fill in all fields before saving the bracket.")
@@ -633,7 +618,7 @@ function ProgressiveTaxRuleForm({ brackets = [], addBracket, removeBracket }) {
   const handleNewBracketChange = (field, value) => {
     setNewBracket((prev) => ({
       ...prev,
-      [field]: value,
+      [field]: parseFloat(value),
     }))
   }
 
@@ -749,7 +734,7 @@ function PercentageTaxRuleForm({ value, onChange }) {
         type="number"
         name="percentageRate"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
         className="w-full p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
         placeholder="Enter rate e.g. 15"
         min={0}
@@ -778,9 +763,91 @@ function FixedTaxRuleForm({ value, onChange }) {
 }
 
 // Component for editing tax rules
-function EditTaxRuleModal({ rule, formData, setFormData, onClose, onSave }) {
-  const [showHistory, setShowHistory] = useState(false)
+function EditTaxRuleModal({ rule, onClose }) {
+  const queryClient = useQueryClient()
+  const [formData, setFormData] = useState({
+    name: "",
+    type: "",
+    purpose: "",
+    category: "",
+    fixed: 0,
+    percentage: 0,
+    bracket: [],
+    year: "",
+    isActive: true,
+  })
+  const [showBrackets, setShowBrackets] = useState(false)
 
+  const { mutate: saveTaxRule, isLoading: isSaving } = useMutation({
+    mutationFn: (data) => updateTaxRule(rule?._id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["tax-rule"])
+      toast.success("Tax Rule updated successfully")
+      onClose()
+    },
+    onError: (error) => {
+      console.log(error)
+      toast.error(`Error saving tax rule: ${error.response.data.error}`)
+    },
+  })
+
+  useEffect(() => {
+    formData.type = rule.type
+    formData.category = rule.category
+    formData.year = rule.year
+
+    if (rule.type === "Fixed") {
+      formData.fixed = rule.fixedAmount
+    }
+    if (rule.type === "Percentage") {
+      formData.percentage = rule.percentageRate
+    }
+
+    formData.isActive = rule.isActive
+
+    if (rule.type === "Progressive") {
+      setShowBrackets(true)
+      formData.bracket = rule.brackets
+    } else {
+      setShowBrackets(false)
+    }
+  }, [rule.type, rule.isActive])
+
+  const handleBracketChange = (index, field, value) => {
+    const updatedBrackets = [...formData.bracket]
+    updatedBrackets[index] = {
+      ...updatedBrackets[index],
+      [field]: field === "rate" ? parseFloat(value) || 0 : parseInt(value) || 0,
+    }
+    setFormData({ ...formData, bracket: updatedBrackets })
+  }
+
+  const addBracket = () => {
+    const lastBracket = formData.bracket[formData.bracket.length - 1]
+    const newMin = lastBracket?.maxAmount ? lastBracket.maxAmount + 1 : 0
+
+    setFormData({
+      ...formData,
+      bracket: [
+        ...formData.bracket,
+        { minAmount: newMin, maxAmount: "", rate: "" },
+      ],
+    })
+  }
+
+  const removeBracket = (index) => {
+    if (formData.bracket.length <= 1) return
+    const updatedBrackets = formData.bracket.filter((_, i) => i !== index)
+    setFormData({ ...formData, bracket: updatedBrackets })
+  }
+
+  const onSave = () => {
+    if (!formData.name) {
+      toast.error("Edit something")
+      return
+    }
+    saveTaxRule(formData)
+  }
   return (
     <motion.div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
@@ -796,12 +863,8 @@ function EditTaxRuleModal({ rule, formData, setFormData, onClose, onSave }) {
       >
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <motion.h3
-              className="text-2xl font-bold"
-              initial={{ x: -20 }}
-              animate={{ x: 0 }}
-            >
-              Edit Tax Rule
+            <motion.h3 className="text-2xl font-bold">
+              {rule ? "Edit Tax Rule" : "Create Tax Rule"}
             </motion.h3>
             <motion.button
               whileHover={{ rotate: 90 }}
@@ -818,144 +881,253 @@ function EditTaxRuleModal({ rule, formData, setFormData, onClose, onSave }) {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Tax Name
               </label>
-              <motion.input
+              <input
                 type="text"
                 value={formData.name}
+                placeholder={rule.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                whileFocus={{
-                  scale: 1.01,
-                  boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.5)",
-                }}
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category
+              </label>
+
+              <select
+                value={rule.category}
+                disabled={true}
+                className="w-full px-4 py-2 border disabled:bg-gray-200 disabled:cursor-not-allowed border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="personal">Personal</option>
+                <option value="vat">VAT</option>
+                <option value="business">Business</option>
+                <option value="property">Property</option>
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Tax Type
               </label>
               <select
-                value={formData.type}
-                onChange={(e) =>
-                  setFormData({ ...formData, type: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={rule.type}
+                disabled={true}
+                className="w-full px-4 py-2 border disabled:bg-gray-200 disabled:cursor-not-allowed border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="Fixed">Fixed</option>
+                <option value="Fixed">Fixed Amount</option>
                 <option value="Percentage">Percentage</option>
                 <option value="Progressive">Progressive</option>
               </select>
             </div>
+
+            {formData.type === "Fixed" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Fixed Amount
+                </label>
+                <input
+                  type="number"
+                  placeholder={rule.fixed || ""}
+                  value={formData.fixed || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      fixed: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            )}
+
+            {formData.type === "Percentage" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Percentage Rate
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder={rule.percentageRate || ""}
+                    value={formData.percentage || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        percentage: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <span className="absolute right-3 top-2.5 text-gray-500">
+                    %
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rate/Formula
+                Year
               </label>
-              <motion.input
-                type="text"
-                value={formData.rate}
+              <input
+                type="date"
+                value={formData.year || ""}
+                placeholder={rule.year || ""}
                 onChange={(e) =>
-                  setFormData({ ...formData, rate: e.target.value })
+                  setFormData({
+                    ...formData,
+                    year: e.target.value,
+                  })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                whileFocus={{
-                  scale: 1.01,
-                  boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.5)",
-                }}
               />
             </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Status
               </label>
               <div className="flex items-center">
-                <motion.div
+                <div
                   className={`w-12 h-6 rounded-full p-1 cursor-pointer mr-2 ${
-                    formData.status === "active"
-                      ? "bg-green-500"
-                      : "bg-gray-300"
+                    formData.isActive ? "bg-green-500" : "bg-gray-300"
                   }`}
                   onClick={() =>
                     setFormData({
                       ...formData,
-                      status:
-                        formData.status === "active" ? "inactive" : "active",
+                      isActive: !formData.isActive,
                     })
                   }
-                  animate={{
-                    backgroundColor:
-                      formData.status === "active" ? "#10B981" : "#D1D5DB",
-                  }}
                 >
                   <motion.div
                     className="bg-white w-4 h-4 rounded-full shadow-md"
                     animate={{
-                      x: formData.status === "active" ? 24 : 0,
+                      x: formData.isActive ? 24 : 0,
                     }}
                     transition={{ type: "spring", stiffness: 700, damping: 30 }}
                   />
-                </motion.div>
-                <span>
-                  {formData.status === "active" ? "Active" : "Inactive"}
-                </span>
+                </div>
+                <span>{formData.isActive ? "Active" : "Inactive"}</span>
               </div>
             </div>
           </div>
 
-          <motion.div className="mb-6" layout>
-            <motion.button
-              className="flex items-center text-blue-500 mb-2"
-              onClick={() => setShowHistory(!showHistory)}
-              whileHover={{ x: 5 }}
-            >
-              {showHistory ? "▼" : "▶"} Version History
-            </motion.button>
-
-            {showHistory && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="bg-gray-50 rounded-lg p-4 overflow-hidden"
-              >
-                {rule.history.length > 0 ? (
-                  rule.history.map((version, i) => (
-                    <div
-                      key={i}
-                      className="mb-2 last:mb-0 pb-2 border-b border-gray-200"
-                    >
-                      <div className="font-medium">
-                        {version.version} - {version.date}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Changed by: {version.user}
+          {showBrackets && (
+            <div className="mb-6 space-y-4">
+              <label className="block text-sm font-medium text-gray-700">
+                Progressive Tax Brackets
+              </label>
+              <div className="space-y-2">
+                {formData.bracket.map((bracket, index) => (
+                  <div
+                    key={index}
+                    className="grid grid-cols-12 gap-2 items-center"
+                  >
+                    <div className="col-span-4">
+                      <input
+                        type="number"
+                        placeholder="Min Amount"
+                        value={bracket.minAmount}
+                        onChange={(e) =>
+                          handleBracketChange(
+                            index,
+                            "minAmount",
+                            e.target.value
+                          )
+                        }
+                        className="w-full p-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                    <div className="col-span-4">
+                      <input
+                        type="number"
+                        placeholder="Max Amount"
+                        value={bracket.maxAmount}
+                        onChange={(e) =>
+                          handleBracketChange(
+                            index,
+                            "maxAmount",
+                            e.target.value
+                          )
+                        }
+                        className="w-full p-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <div className="relative">
+                        <input
+                          type="number"
+                          placeholder="Rate"
+                          value={bracket.rate}
+                          onChange={(e) =>
+                            handleBracketChange(index, "rate", e.target.value)
+                          }
+                          className="w-full p-2 border border-gray-300 rounded-lg"
+                        />
+                        <span className="absolute right-3 top-2.5 text-gray-500">
+                          %
+                        </span>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-gray-500">No version history yet</div>
-                )}
-              </motion.div>
-            )}
-          </motion.div>
+                    <div className="col-span-1">
+                      {index > 0 && (
+                        <button
+                          onClick={() => removeBracket(index)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={addBracket}
+                className="mt-2 text-blue-600 hover:underline flex items-center"
+              >
+                <span>+ Add Bracket</span>
+              </button>
+            </div>
+          )}
 
           <div className="flex justify-end gap-4">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-6 py-2 bg-gray-200 rounded-lg"
-              onClick={onClose}
+            <button
+              className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+              onClick={() => {
+                setFormData({
+                  name: "",
+                  type: "",
+                  purpose: "",
+                  category: "",
+                  fixed: 0,
+                  percentage: 0,
+                  bracket: [],
+                  year: "",
+                  isActive: false,
+                })
+                onClose()
+              }}
             >
               Cancel
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-6 py-2 bg-blue-500 text-white rounded-lg"
+            </button>
+            <button
+              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
               onClick={onSave}
             >
-              Save Changes
-            </motion.button>
+              {isSaving ? (
+                <span>
+                  <Loader2 className="animate-spin" /> Saving ...
+                </span>
+              ) : (
+                "Save Changes"
+              )}
+            </button>
           </div>
         </div>
       </motion.div>
@@ -964,7 +1136,21 @@ function EditTaxRuleModal({ rule, formData, setFormData, onClose, onSave }) {
 }
 
 // Component for delete/archive confirmation
-function DeleteConfirmation({ ruleName, onConfirm, onCancel }) {
+function DeleteConfirmation({ ruleName, onCancel, rule, ruleToDelete }) {
+  const queryClient = useQueryClient()
+
+  const { mutate: deleteTax, isLoading: isDeleting } = useMutation({
+    mutationFn: () => deleteTaxRule(ruleToDelete),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["tax-rule"])
+      toast.success("Tax Rule Deleted successfully")
+      onCancel()
+    },
+    onError: (error) => {
+      console.log(error)
+      toast.error(`Error saving tax rule: ${error.response.data.error}`)
+    },
+  })
   return (
     <motion.div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
@@ -1019,9 +1205,9 @@ function DeleteConfirmation({ ruleName, onConfirm, onCancel }) {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="px-6 py-2 bg-red-500 text-white rounded-lg"
-            onClick={onConfirm}
+            onClick={deleteTax}
           >
-            Archive Rule
+            {isDeleting ? "deleting ..." : "Delete Rule"}
           </motion.button>
         </div>
       </motion.div>

@@ -105,7 +105,25 @@ export const createNotificationAPI = async (data) => {
         withCredentials: true,
       }
     )
+
     return response.data
+  } catch (err) {
+    console.error("Failed to create notification:", err)
+    const message =
+      err?.response?.data?.message || "Unable to create notification."
+    throw new Error(message)
+  }
+}
+
+export const increaseNotice = async (id) => {
+  try {
+    const res = await axios.patch(
+      `${import.meta.env.VITE_BASE_URL}/api/user/${id}/increase-notice`,
+      {
+        withCredentials: true,
+      }
+    )
+    return res.data
   } catch (err) {
     console.error("Failed to create notification:", err)
     const message =

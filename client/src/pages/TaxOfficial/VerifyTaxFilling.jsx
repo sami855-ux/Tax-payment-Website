@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useTable, useSortBy, useFilters, usePagination } from "react-table"
 import { motion } from "framer-motion"
 import {
@@ -10,50 +10,43 @@ import {
   FiEye,
   FiEdit,
 } from "react-icons/fi"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { assignedTaxFillings, reviewTaxFiling } from "@/services/Tax"
+import Spinner from "@/ui/Spinner"
+import toast from "react-hot-toast"
+import { Loader2 } from "lucide-react"
 
 const VerifyTaxFilling = () => {
+  const { data: fillingData, isLoading } = useQuery({
+    queryKey: ["assigned-filling"],
+    queryFn: assignedTaxFillings,
+  })
+  const queryClient = useQueryClient()
   const [selectedFiling, setSelectedFiling] = useState(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const [actionType, setActionType] = useState("view") // 'view' or 'review'
+  const [actionType, setActionType] = useState("view")
+  const [action, setAction] = useState("approved")
+  const [remark, setRemark] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const data = React.useMemo(
-    () => [
-      {
-        id: 1,
-        taxpayer: "John Doe",
-        tin: "123456789",
-        taxType: "VAT",
-        period: "Q1-2025",
-        amount: "12,500 ETB",
-        status: "pending",
-        submittedOn: "Apr 20, 2025",
-        documents: ["document1.pdf", "receipt1.jpg"],
-      },
-      {
-        id: 2,
-        taxpayer: "Mekdes B",
-        tin: "987654321",
-        taxType: "Income Tax",
-        period: "FY-2024",
-        amount: "75,000 ETB",
-        status: "approved",
-        submittedOn: "Mar 5, 2025",
-        documents: ["income_statement.pdf"],
-      },
-      {
-        id: 3,
-        taxpayer: "Mekdes B",
-        tin: "987654321",
-        taxType: "Income Tax",
-        period: "FY-2024",
-        amount: "75,000 ETB",
-        status: "approved",
-        submittedOn: "Mar 5, 2025",
-        documents: ["income_statement.pdf"],
-      },
-    ],
-    []
-  )
+  const data = React.useMemo(() => {
+    if (!fillingData) return []
+
+    return fillingData.map((filing) => ({
+      id: filing.id, // or filing.id depending on your API
+      taxpayer: filing.taxpayer || filing.user?.name || "N/A",
+      tin: filing.tin || filing.taxId || "N/A",
+      taxType: filing.taxType || filing.category || "N/A",
+      period: filing.period || `${filing.year}-Q${filing.quarter}` || "N/A",
+      amount: filing.amount ? `${filing.amount.toLocaleString()}` : "N/A",
+      status: filing.status || "pending",
+      submittedOn: filing.submittedOn
+        ? new Date(filing.submittedOn).toLocaleDateString()
+        : "N/A",
+      documents: filing.documents || [],
+      taxpayerId: filing.taxpayerId,
+    }))
+  }, [fillingData])
 
   const columns = React.useMemo(
     () => [
@@ -104,7 +97,7 @@ const VerifyTaxFilling = () => {
         accessor: "actions",
         Cell: ({ row }) => (
           <div className="flex space-x-2">
-            {row.original.status === "pending" ? (
+            {row.original.status === "submitted" ? (
               <button
                 onClick={() => {
                   setSelectedFiling(row.original)
@@ -150,6 +143,40 @@ const VerifyTaxFilling = () => {
     setPageSize,
     state: { pageIndex, pageSize },
   } = useTable({ columns, data }, useFilters, useSortBy, usePagination)
+
+  const handleReview = async () => {
+    const reviewData = {
+      userId: selectedFiling.taxpayerId,
+      filingId: selectedFiling.id,
+      decision: action,
+      remarks: remark,
+    }
+    try {
+      setIsSubmitting(true)
+      const res = await reviewTaxFiling(reviewData)
+
+      if (res.success) {
+        toast.success(res.message)
+        setSelectedFiling()
+        setIsDrawerOpen(false)
+        setAction("approved")
+        setRemark("")
+        queryClient.invalidateQueries(["assigned-filling"])
+      } else {
+        toast.error(res.error)
+      }
+    } catch (error) {
+      toast.error(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  useEffect(() => {
+    document.title = "Verify tax filling"
+  }, [])
+
+  if (isLoading) return <Spinner />
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -445,7 +472,7 @@ const VerifyTaxFilling = () => {
                 </div>
 
                 {actionType === "review" &&
-                  selectedFiling.status === "pending" && (
+                  selectedFiling.status === "submitted" && (
                     <div className="mt-8">
                       <h3 className="text-lg font-medium text-gray-900 mb-4">
                         Verification
@@ -461,6 +488,8 @@ const VerifyTaxFilling = () => {
                           <select
                             id="status"
                             name="status"
+                            value={action}
+                            onChange={(e) => setAction(e.target.value)}
                             className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                           >
                             <option value="approved">✅ Approve</option>
@@ -477,8 +506,10 @@ const VerifyTaxFilling = () => {
                           <textarea
                             id="notes"
                             name="notes"
+                            value={remark}
+                            onChange={(e) => setRemark(e.target.value)}
                             rows={3}
-                            className="shadow-sm focus:ring-blue-500 focus:border-blue-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md"
+                            className="shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md"
                             placeholder="Add verification notes or reason for rejection"
                           ></textarea>
                         </div>
@@ -492,9 +523,18 @@ const VerifyTaxFilling = () => {
                           </button>
                           <button
                             type="button"
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            onClick={handleReview}
+                            disabled={!remark || !action}
+                            className="inline-flex disabled:cursor-not-allowed disabled:bg-blue-400 items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                           >
-                            Submit Decision
+                            {isSubmitting ? (
+                              <span className="flex items-center gap-2">
+                                <Loader2 className="animate-spin" />
+                                Submitting...
+                              </span>
+                            ) : (
+                              "Submit Decision"
+                            )}
                           </button>
                         </div>
                       </div>
@@ -513,7 +553,12 @@ const VerifyTaxFilling = () => {
           animate={{ opacity: 0.5 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 bg-black z-40"
-          onClick={() => setIsDrawerOpen(false)}
+          onClick={() => {
+            setIsDrawerOpen(false)
+            setSelectedFiling()
+            setAction("approved")
+            setRemark("")
+          }}
         />
       )}
     </div>

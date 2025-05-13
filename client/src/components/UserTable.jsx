@@ -1,10 +1,11 @@
-import { getAllUsers } from "@/services/apiUser"
-import Table from "@/ui/Table"
 import { useQuery } from "@tanstack/react-query"
-import UserRow from "./UserRow"
 import { Loader2, Search } from "lucide-react"
+import { useMemo, useState } from "react"
+
+import { getAllUsers } from "@/services/apiUser"
+import UserRow from "./UserRow"
+import Table from "@/ui/Table"
 import Menus from "@/ui/Menus"
-import { useEffect, useMemo, useState } from "react"
 
 export default function UserTable() {
   const { isLoading, data } = useQuery({
@@ -91,8 +92,8 @@ export default function UserTable() {
             <div>Name</div>
             <div>Gender</div>
             <div>Email</div>
+            <div>tax id</div>
             <div>Phone Number</div>
-            <div>Address</div>
             <div>Role</div>
             <div></div>
           </Table.Header>
