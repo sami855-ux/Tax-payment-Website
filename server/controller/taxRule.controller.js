@@ -1,4 +1,5 @@
 import TaxRule from "../models/TaxRule.js"
+import User from "../models/userModel.js"
 
 const validateBrackets = (brackets) => {
   if (!Array.isArray(brackets) || brackets.length === 0) {
@@ -243,4 +244,79 @@ export const deleteTaxRule = async (req, res) => {
       error: "Internal server error.",
     })
   }
+}
+
+export const calculateTax = async (filing) => {
+  const category = filing.taxCategory
+  let taxAmount = 0
+
+  // Fetch tax rule for the specific category
+  const taxRule = await TaxRule.findOne({
+    category: new RegExp(`^${category}$`, "i"),
+    isActive: true,
+  })
+
+  if (!taxRule) {
+    throw new Error(`No tax rule found for category: ${category}`)
+  }
+
+  if (category === "personal") {
+    // Fetch user details to get monthlyIncome
+    const user = await User.findById(filing.taxpayer)
+    if (
+      !user ||
+      !user.taxDetails ||
+      !user.taxDetails.personal ||
+      !user.taxDetails.personal.monthlyIncome
+    ) {
+      throw new Error("User income not found or invalid")
+    }
+
+    const monthlyIncome = user.taxDetails.personal.monthlyIncome
+
+    console.log("monthlyIncome", monthlyIncome)
+    // Calculate tax based on the tax rule type
+    if (taxRule.type === "Fixed") {
+      taxAmount = taxRule.fixedAmount // Direct fixed tax amount
+    } else if (taxRule.type === "Percentage") {
+      taxAmount = monthlyIncome * (taxRule.percentageRate / 100) // Percentage-based tax
+    } else if (taxRule.type === "Progressive") {
+      const brackets = taxRule.brackets.sort(
+        (a, b) => a.minAmount - b.minAmount
+      )
+      for (const bracket of brackets) {
+        if (
+          monthlyIncome >= bracket.minAmount &&
+          monthlyIncome <= bracket.maxAmount
+        ) {
+          taxAmount = monthlyIncome * (bracket.rate / 100)
+          break
+        }
+      }
+    }
+  } else {
+    const totalAmount = filing.totalAmount
+
+    if (taxRule.type === "Fixed") {
+      taxAmount = taxRule.fixedAmount // Direct fixed tax amount
+    } else if (taxRule.type === "Percentage") {
+      taxAmount = totalAmount * (taxRule.percentageRate / 100) // Percentage-based tax
+    } else if (taxRule.type === "Progressive") {
+      const brackets = taxRule.brackets.sort(
+        (a, b) => a.minAmount - b.minAmount
+      )
+      for (const bracket of brackets) {
+        if (
+          totalAmount >= bracket.minAmount &&
+          totalAmount <= bracket.maxAmount
+        ) {
+          taxAmount = totalAmount * (bracket.rate / 100)
+          break
+        }
+      }
+    }
+  }
+
+  console.log("approved and calculated", taxAmount)
+  return taxAmount
 }

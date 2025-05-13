@@ -21,6 +21,8 @@ import {
 import { registerValidation } from "../validators/register.js"
 import { loginValidation } from "../validators/login.js"
 
+import upload from "../config/multer.js"
+
 const router = express.Router()
 
 //! assign official to taxpayer => Admin
@@ -42,7 +44,12 @@ router.delete("/:userId", isAuthenticated, deleteTaxpayer)
 //Get user by id
 router.get("/:userId", isAuthenticated, getUserById)
 //Update user by id
-router.patch("/:userId", isAuthenticated, updateUserById)
+router.patch(
+  "/:userId",
+  isAuthenticated,
+  upload.single("profilePicture"),
+  updateUserById
+)
 //To logout the user
 router.post("/logout", logoutUser)
 // PATCH /api/users/:id/role => verify the user is admin and authenticated

@@ -1,6 +1,7 @@
 import mongoose from "mongoose"
 import TaxPayment from "./TaxPayment.js"
-// import TaxRule from "./TaxRule.js"
+import TaxSchedule from "./TaxSchedule.js"
+import TaxRule from "./TaxRule.js"
 
 const taxFilingSchema = new mongoose.Schema(
   {
@@ -22,10 +23,7 @@ const taxFilingSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-    totalAmount: {
-      type: Number,
-      required: true, // Total tax amount for this filing
-    },
+
     status: {
       type: String,
       enum: ["pending", "submitted", "approved", "rejected"],
@@ -57,6 +55,10 @@ const taxFilingSchema = new mongoose.Schema(
     totalAmount: {
       type: Number,
     },
+    calculatedTax: {
+      type: Number,
+      required: false, // system-calculated
+    },
     notes: {
       type: String, // Additional notes or comments about the tax filing
       required: false, // Optional field
@@ -64,13 +66,19 @@ const taxFilingSchema = new mongoose.Schema(
     taxPayments: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "TaxPayment",
+        ref: "Payment",
       },
     ],
     taxRules: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "TaxRule",
+      },
+    ],
+    taxSchedules: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TaxSchedule",
       },
     ],
   },

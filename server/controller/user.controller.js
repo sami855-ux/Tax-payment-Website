@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import dotenv from "dotenv"
 import { validationResult } from "express-validator"
+import sharp from "sharp"
+import { cloudinary } from "../config/cloudairy.js"
 
 import User from "../models/userModel.js"
 import {
@@ -210,9 +212,11 @@ export const getUserById = async (req, res) => {
 
 // Update user by ID
 export const updateUserById = async (req, res) => {
+  let cloudResponse
   try {
     const { userId } = req.params
     const updateData = req.body
+    const profilePicture = req.file || null
 
     const existingUser = await User.findById(userId)
 
@@ -221,6 +225,40 @@ export const updateUserById = async (req, res) => {
         success: false,
         message: "User not found",
       })
+    }
+
+    if (profilePicture) {
+      if (!profilePicture?.mimetype?.startsWith("image/")) {
+        return res
+          .status(400)
+          .json({ error: "Resume must be an image", success: false })
+      }
+      // Optimize image
+      const optimizedImageBuffer = await sharp(profilePicture?.buffer)
+        .resize({ width: 1000, height: 1000, fit: "inside" })
+        .toFormat("jpeg", { quality: 80 })
+        .toBuffer()
+
+      const fileUri = `data:image/jpeg;base64,${optimizedImageBuffer.toString(
+        "base64"
+      )}`
+
+      // Upload to Cloudinary
+      cloudResponse = await cloudinary.uploader.upload(fileUri, {
+        folder: "resumes",
+        resource_type: "image",
+        timestamp: Math.floor(Date.now() / 1000),
+      })
+
+      console.log("Debug values before push:", {
+        resumeUrl: cloudResponse?.secure_url,
+      })
+
+      if (!cloudResponse || !cloudResponse.secure_url) {
+        return res
+          .status(500)
+          .json({ error: "Failed to upload resume image", success: false })
+      }
     }
 
     if (updateData.email && updateData.email !== existingUser.email) {
@@ -234,7 +272,12 @@ export const updateUserById = async (req, res) => {
       }
     }
 
-    const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
+    const data = {
+      ...updateData,
+      profilePhoto: profilePicture ? cloudResponse?.secure_url : "",
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, data, {
       new: true,
       runValidators: true,
     })

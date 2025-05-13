@@ -17,6 +17,10 @@ const paymentSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    remainingAmount: {
+      type: Number,
+      default: 0, // For partial payments, tracks remaining balance
+    },
     dueDate: {
       type: Date,
       required: true,
@@ -32,7 +36,7 @@ const paymentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Pending", "Paid", "Overdue", "Failed"],
+      enum: ["Pending", "Paid", "Overdue", "Failed", "Partially Paid"],
       default: "Pending",
     },
     receiptUrl: {
@@ -42,6 +46,62 @@ const paymentSchema = new mongoose.Schema(
     referenceId: {
       type: String,
       unique: true,
+      required: true,
+    },
+    paymentType: {
+      type: String,
+      enum: ["full", "partial", "scheduled"],
+      default: "full", // Default to full payment
+    },
+    schedule: [
+      {
+        amount: {
+          type: Number,
+          required: true,
+        },
+        dueDate: {
+          type: Date,
+          required: true,
+        },
+        paid: {
+          type: Boolean,
+          default: false, // Tracks if the scheduled payment has been paid
+        },
+      },
+    ], // For scheduled payments only
+    taxFiling: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "TaxFiling", // Reference to the TaxFiling model
+      required: true, // A payment should be associated with a tax filing
+    },
+
+    // Conditional Fields
+    phoneNumber: {
+      type: String,
+      required: function () {
+        return this.method === "telebirr" || this.method === "Mobile Money"
+      },
+    },
+    bankName: {
+      type: String,
+      required: function () {
+        return this.method === "Bank Transfer"
+      },
+    },
+    senderName: {
+      type: String,
+      required: function () {
+        return this.method === "Bank Transfer"
+      },
+    },
+    bankNumber: {
+      type: String,
+      required: function () {
+        return this.method === "Bank Transfer"
+      },
+    },
+    paymentReceiptImage: {
+      type: String,
       required: true,
     },
   },

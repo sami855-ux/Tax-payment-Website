@@ -27,7 +27,7 @@ export const generateInitialSchedules = async (userId) => {
       if (categoryName === "vat") {
         frequency = "monthly"
       } else if (categoryName === "personal") {
-        frequency = "yearly"
+        frequency = "monthly"
       } else if (categoryName === "business") {
         frequency = "quarterly"
       } else if (categoryName === "property") {

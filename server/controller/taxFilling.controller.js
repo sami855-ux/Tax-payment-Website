@@ -1,27 +1,63 @@
 import { startOfMonth, endOfMonth, parseISO } from "date-fns"
+import sharp from "sharp"
 
 import TaxFiling from "../models/TaxFilling.js"
 import TaxSchedule from "../models/TaxSchedule.js"
 import Notification from "../models/Notification.js"
+import { calculateTax } from "./taxRule.controller.js"
+import { cloudinary } from "../config/cloudairy.js"
 import User from "../models/userModel.js"
 
 export const createTaxFiling = async (req, res) => {
   try {
     const userId = req.userId
-    const {
-      taxCategory,
-      filingPeriod,
-      totalAmount,
-      paymentPurpose,
-      documentFiled,
-      notes,
-    } = req.body
+    const { taxCategory, filingPeriod, totalAmount, paymentPurpose, notes } =
+      req.body
+    const documentFiled = req.file || null
 
     if (!taxCategory || !filingPeriod || !paymentPurpose) {
       return res.status(400).json({
         success: false,
         message: "All required fields must be filled.",
       })
+    }
+
+    if (!documentFiled) {
+      return res
+        .status(400)
+        .json({ error: "Resume image is required", success: false })
+    }
+
+    if (!documentFiled.mimetype.startsWith("image/")) {
+      return res
+        .status(400)
+        .json({ error: "Resume must be an image", success: false })
+    }
+    // Optimize image
+    const optimizedImageBuffer = await sharp(documentFiled.buffer)
+      .resize({ width: 1000, height: 1000, fit: "inside" })
+      .toFormat("jpeg", { quality: 80 })
+      .toBuffer()
+
+    const fileUri = `data:image/jpeg;base64,${optimizedImageBuffer.toString(
+      "base64"
+    )}`
+
+    // Upload to Cloudinary
+    const cloudResponse = await cloudinary.uploader.upload(fileUri, {
+      folder: "resumes",
+      resource_type: "image",
+      timestamp: Math.floor(Date.now() / 1000),
+    })
+
+    console.log("Debug values before push:", {
+      resumeUrl: cloudResponse?.secure_url,
+    })
+
+    if (!cloudResponse || !cloudResponse.secure_url) {
+      return res
+        .status(500)
+        .json({ error: "Failed to upload resume image", success: false })
     }
 
     // Check if already filed
@@ -64,11 +100,12 @@ export const createTaxFiling = async (req, res) => {
       filingPeriod,
       totalAmount,
       paymentPurpose,
-      documentFiled,
+      documentFiled: cloudResponse?.secure_url,
       notes,
       status: "submitted",
       paymentStatus: "unpaid",
       isLate,
+      taxSchedules: matchingSchedule,
     })
 
     await newFiling.save()
@@ -77,7 +114,7 @@ export const createTaxFiling = async (req, res) => {
       recipient: userId,
       recipientModel: "taxpayer",
       type: "success",
-      message: `Your ${taxCategory} with ${filingPeriod} period is filled successfully `,
+      message: `Your ${taxCategory} tax with ${filingPeriod} filling period is filled successfully, Wait for approval to pay.`,
     })
     return res.status(201).json({
       success: true,
@@ -115,6 +152,7 @@ export const reviewTaxFiling = async (req, res) => {
 
     // Find the tax filing using filingId
     const filing = await TaxFiling.findById(filingId)
+
     if (!filing) {
       return res.status(404).json({
         success: false,
@@ -127,6 +165,12 @@ export const reviewTaxFiling = async (req, res) => {
     if (remarks) {
       filing.remarks = remarks
     }
+
+    const calculatedTax = await calculateTax(filing)
+
+    filing.calculatedTax = calculatedTax
+
+    console.log("Filling", filing)
 
     await filing.save()
 
@@ -213,6 +257,153 @@ export const getAllAssignedTaxpayerFilings = async (req, res) => {
       success: false,
       message: "Failed to fetch tax filings for the assigned taxpayers.",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
+export const getApprovedTaxFilingsForUser = async (req, res) => {
+  try {
+    const userId = req.userId
+
+    const approvedFilings = await TaxFiling.find({
+      taxpayer: userId,
+      status: "approved",
+      paymentStatus: { $in: ["unpaid", "partially_paid"] },
+    }).sort({ createdAt: -1 })
+
+    return res.status(200).json({
+      success: true,
+      count: approvedFilings.length,
+      filings: approvedFilings,
+    })
+  } catch (error) {
+    console.error("Error fetching approved tax filings:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching approved tax filings",
+    })
+  }
+}
+export const getTaxPaymentTrends = async (req, res) => {
+  try {
+    // Default to last 12 months if no date range provided
+    const twelveMonthsAgo = new Date()
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
+
+    const paymentTrends = await TaxFiling.aggregate([
+      {
+        $match: {
+          paymentStatus: "paid",
+          paymentDate: {
+            $exists: true,
+            $gte: twelveMonthsAgo, // Default date range filter
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$paymentDate" },
+            month: { $month: "$paymentDate" },
+          },
+          totalPaid: { $sum: "$totalAmount" },
+          paymentCount: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { "_id.year": 1, "_id.month": 1 },
+      },
+      {
+        $project: {
+          _id: 0,
+          period: {
+            $dateToString: {
+              format: "%Y-%m",
+              date: {
+                $dateFromParts: {
+                  year: "$_id.year",
+                  month: "$_id.month",
+                },
+              },
+            },
+          },
+          totalPaid: 1,
+          paymentCount: 1,
+        },
+      },
+    ])
+
+    // Fill in missing months with zero values
+    const completeData = fillMissingMonths(paymentTrends, twelveMonthsAgo)
+
+    res.json({
+      success: true,
+      payment: {
+        labels: completeData.map((item) => item.period),
+        datasets: [
+          {
+            label: "Total Tax Paid",
+            data: completeData.map((item) => item.totalPaid),
+            unit: "currency",
+          },
+          {
+            label: "Number of Payments",
+            data: completeData.map((item) => item.paymentCount),
+            unit: "count",
+          },
+        ],
+      },
+    })
+  } catch (error) {
+    console.error("Error fetching tax payment trends:", error)
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate payment trends",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    })
+  }
+}
+
+function fillMissingMonths(data, startDate) {
+  const result = []
+  const currentDate = new Date(startDate)
+  const now = new Date()
+
+  while (currentDate <= now) {
+    const period = currentDate.toISOString().slice(0, 7) // YYYY-MM format
+    const existingData = data.find((item) => item.period === period)
+
+    result.push({
+      period,
+      totalPaid: existingData?.totalPaid || 0,
+      paymentCount: existingData?.paymentCount || 0,
+    })
+
+    // Move to next month
+    currentDate.setMonth(currentDate.getMonth() + 1)
+  }
+
+  return result
+}
+
+export const getPendingTaxFilingsForUser = async (req, res) => {
+  try {
+    const userId = req.userId
+
+    const pendingFilings = await TaxFiling.find({
+      taxpayer: userId,
+      status: "submitted",
+    }).sort({ createdAt: -1 })
+
+    return res.status(200).json({
+      success: true,
+      count: pendingFilings.length,
+      filings: pendingFilings,
+    })
+  } catch (error) {
+    console.error("Error fetching pending tax filings:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching pending tax filings.",
     })
   }
 }
