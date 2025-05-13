@@ -61,16 +61,13 @@ export const getFilledPeriod = async () => {
   }
 }
 
-export const createTaxFiling = async (filingData) => {
+export const createTaxFiling = async (formData) => {
   try {
     const res = await axios.post(
       `${import.meta.env.VITE_BASE_URL}/api/filling/create`,
-      filingData,
+      formData,
       {
         withCredentials: true,
-        headers: {
-          "Content-Type": "application/json",
-        },
       }
     )
 
@@ -80,6 +77,7 @@ export const createTaxFiling = async (filingData) => {
       return { error: res.data.message || "Filing failed" }
     }
   } catch (error) {
+    console.log(error)
     return {
       error:
         error.response?.data?.message ||
@@ -216,13 +214,122 @@ export const reviewTaxFiling = async (formData) => {
   } catch (error) {
     console.log(error)
     if (error.response) {
-      // Server responded with a status other than 2xx
       throw new Error(
         error.response.data.error || "Failed to review the filling."
       )
     } else {
-      // Network or unexpected error
       throw new Error("Network error or server not reachable.")
     }
+  }
+}
+export const getApprovedTaxFilingsForUser = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/api/filling/approved`,
+      {
+        withCredentials: true,
+      }
+    )
+    if (response.data.success) {
+      return response.data
+    } else {
+      return { error: response.data.message || "Failed" }
+    }
+  } catch (error) {
+    console.log(error)
+    if (error.response) {
+      throw new Error(
+        error.response.data.error || "Failed to get approved filling."
+      )
+    } else {
+      throw new Error("Network error or server not reachable.")
+    }
+  }
+}
+
+export const createPayment = async (paymentData) => {
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_BASE_URL}/api/payment/create`,
+      paymentData,
+      {
+        withCredentials: true,
+      }
+    )
+
+    if (response.data.success) {
+      console.log("Payment created:", response.data.payment)
+      return response.data
+    } else {
+      console.error("Payment creation failed:", response.data.message)
+      return { error: response.data.message || "Failed" }
+    }
+  } catch (error) {
+    console.error("Error creating payment:", error.response?.data || error)
+    throw error
+  }
+}
+
+export const fetchUserPayments = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/api/payment/getall`,
+      {
+        withCredentials: true,
+      }
+    )
+
+    return response.data.payments
+  } catch (error) {
+    console.error("Error fetching user payments:", error)
+    throw error.response?.data || { message: "Failed to fetch payments." }
+  }
+}
+export const getTaxPaymentTrends = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/api/filling/getPaymentTrend`,
+      {
+        withCredentials: true,
+      }
+    )
+
+    return response.data.payment
+  } catch (error) {
+    console.error("Error fetching user payments:", error)
+    throw error.response?.data || { message: "Failed to fetch payments." }
+  }
+}
+export const fetchPendingTaxFilings = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/api/filling/pending`,
+      {
+        withCredentials: true,
+      }
+    )
+
+    return response.data
+  } catch (error) {
+    console.error("Error fetching user payments:", error)
+    throw error.response?.data || { message: "Failed to fetch payments." }
+  }
+}
+export const getPaymentsForOfficial = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/api/payment/getassigned-payment`,
+      {
+        withCredentials: true,
+      }
+    )
+
+    console.log("response")
+    if (response.data.success) {
+      return response.data.payment
+    }
+  } catch (error) {
+    console.error("Error fetching user payments:", error)
+    throw error.response?.data || { message: "Failed to fetch payments." }
   }
 }

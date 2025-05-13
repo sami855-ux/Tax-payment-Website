@@ -105,11 +105,6 @@ export default function Menu() {
             path="/admin/report"
             icon={<FiActivity size={23} />}
           />
-          <DashboardLink
-            text={"Profile"}
-            path="/admin/profile"
-            icon={<FiUser size={23} />}
-          />
 
           <li
             className={`w-[260px] md:w-[65px] lg:w-[260px] relative `}

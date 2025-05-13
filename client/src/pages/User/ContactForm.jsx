@@ -2,6 +2,7 @@ import React, { useState } from "react"
 import { motion } from "framer-motion"
 import { sendEmail } from "@/services/sendEmail"
 import toast from "react-hot-toast"
+import { Loader, Loader2 } from "lucide-react"
 
 const ContactForm = () => {
   const [formData, setFormData] = useState({
@@ -12,7 +13,7 @@ const ContactForm = () => {
   })
 
   const [formStatus, setFormStatus] = useState(null) // For feedback after form submission
-
+  const [isLoading, setIsLoading] = useState(false)
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData((prevState) => ({ ...prevState, [name]: value }))
@@ -22,13 +23,20 @@ const ContactForm = () => {
     e.preventDefault()
 
     try {
+      setIsLoading(true)
       const res = await sendEmail(formData)
 
       if (res?.success) {
-        setFormStatus(res.message)
-        toast.success(res.message)
+        setFormStatus(res?.message)
+        toast.success(res?.message)
+        setFormData({
+          name: "",
+          email: "",
+          subject: "",
+          message: "",
+        })
       } else {
-        setFormStatus(res.message)
+        setFormStatus(res?.error)
       }
     } catch (error) {
       console.error("Error sending email:", error)
@@ -36,6 +44,8 @@ const ContactForm = () => {
         "There was an error sending your message. Please try again."
       )
       toast.error("There was an error sending your message. Please try again.")
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -108,9 +118,19 @@ const ContactForm = () => {
         )}
         <button
           type="submit"
-          className="w-48 cursor-pointer p-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-all"
+          className={`${
+            isLoading
+              ? "cursor-not-allowed bg-blue-200"
+              : "cursor-pointer bg-blue-500"
+          } "w-48 cursor-pointer p-3  text-white rounded-lg font-semibold hover:bg-blue-600 transition-all"`}
         >
-          Send Message
+          {isLoading ? (
+            <span className="flex items-center gap-2">
+              <Loader className="animate-spin" /> <span>Sending ...</span>
+            </span>
+          ) : (
+            " Send Message"
+          )}
         </button>
       </form>
     </motion.div>

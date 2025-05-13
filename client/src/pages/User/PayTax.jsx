@@ -1,10 +1,13 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 
 import BillingReceiptPreview from "./BillingView"
 import { cn } from "@/helpers/util"
 import Modal from "@/ui/Modal"
-import { useSelector } from "react-redux"
+import { createPayment, getApprovedTaxFilingsForUser } from "@/services/Tax"
+import toast from "react-hot-toast"
+import { Wallet } from "lucide-react"
+import { validatePhoneNumber } from "@/helpers/Validiation"
 
 const buildTaxTypesFromSchedules = (schedules) => {
   const uniqueCategories = new Set()
@@ -44,10 +47,21 @@ const paymentOptions = [
   },
 ]
 
-export default function PayTax() {
-  const { schedules } = useSelector((store) => store.filled)
+const banks = [
+  "Abisinya",
+  "Commercial Bank of Ethiopia",
+  "Awash International Bank",
+  "Dashen Bank",
+  "Bank of Abyssinia",
+  "United Bank",
+  "Lion International Bank",
+  "Nib International Bank",
+]
 
-  const taxTypes = buildTaxTypesFromSchedules(schedules)
+export default function PayTax() {
+  const [approved, setApproved] = useState([])
+
+  const taxTypes = buildTaxTypesFromSchedules(approved || [])
 
   const [selected, setSelected] = useState("full")
   const [partialAmount, setPartialAmount] = useState("")
@@ -55,7 +69,73 @@ export default function PayTax() {
   const [selectedTax, setSelectedTax] = useState(null)
   const [selectedPayment, setSelectedPayment] = useState("telebirr")
   const [isOpen, setIsOpen] = useState(false)
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [filePhoto, setFilePhoto] = useState("")
+  const [bankName, setBankName] = useState("")
+  const [bankNumber, setBankNumber] = useState(0)
+  const [senderName, setSenderName] = useState("")
+  const [isLoading, setIsLoading] = useState("")
 
+  const handleApproved = async () => {
+    const res = await getApprovedTaxFilingsForUser()
+
+    if (res.success) {
+      setApproved(res.filings)
+    }
+  }
+
+  const handlePayment = async (e) => {
+    e.preventDefault()
+
+    const tax = approved.filter((data) => data.taxCategory === selectedTax)[0]
+
+    const formData = new FormData()
+    formData.append("taxFilingId", tax._id)
+    formData.append("amount", tax.calculatedTax)
+    formData.append("paymentType", selected)
+    formData.append("method", selectedPayment)
+    formData.append("dueDate", tax.filingDate)
+    formData.append("bankName", bankName)
+    formData.append("senderName", senderName)
+    formData.append("bankNumber", bankNumber)
+    // file object
+    if (selected === "partial") {
+      formData.append("payAmount", parseFloat(partialAmount))
+    }
+
+    if (!filePhoto) {
+      toast.error("Recept image is needed")
+      return
+    }
+    if (!validatePhoneNumber(phoneNumber)) {
+      toast.error("Phone number is not correct")
+      return
+    }
+
+    formData.append("phoneNumber", phoneNumber)
+    formData.append("paymentReceiptImage", filePhoto)
+
+    try {
+      const res = await createPayment(formData)
+
+      if (res.success) {
+        handleApproved()
+        toast.success(res.message)
+      } else {
+        toast.error(res.error)
+      }
+    } catch (error) {
+      toast.error(error)
+    }
+    console.log(data)
+  }
+  console.log(approved)
+
+  useEffect(() => {
+    handleApproved()
+  }, [])
+
+  console.log(approved)
   return (
     <>
       <div className="bg-white min-h-screen p-6">
@@ -79,183 +159,371 @@ export default function PayTax() {
           className="tax-pay-page py-6 flex flex-col gap-6"
         >
           {/* 1. Payment Summary Overview */}
-          <section className="w-[90%] min-h-fit bg-slate-50 shadow-md rounded-lg p-4 mb-6">
-            <h2 className="text-lg text-gray-700 font-semibold mb-4">
-              Payment Summary
-            </h2>
-            <div className="w-full min-h-fit flex flex-col md:flex-row gap-7">
-              <section className="w-full md:w-[30%]">
-                <p className="text-[15px] my-1">
-                  <span className="text-[15px] text-gray-700 pr-4 ">
-                    {" "}
-                    Outstanding amount:
-                  </span>{" "}
-                  <span className="font-semibold text-gray-800">
-                    2,400 birr
-                  </span>
-                </p>
-                <p className="text-[15px] my-1">
-                  <span className="text-[15px] text-gray-700 pr-4 ">
-                    {" "}
-                    Due date:
-                  </span>{" "}
-                  <span className="font-semibold text-gray-800">
-                    {new Date().toDateString()}
-                  </span>
-                </p>
-                <p className="text-[15px] my-1">
-                  <span className="text-[15px] text-gray-700 pr-4 ">
-                    {" "}
-                    Status
-                  </span>{" "}
-                  <span className="font-semibold text-gray-800">Pending</span>
-                </p>
-              </section>
-
-              <section className="w-full md:w-1/2">
-                <h3 className="text-[16px] text-gray-800 font-semibold mb-2">
-                  Breakdown
-                </h3>
-                <div className="flex  h-fit gap-3">
-                  <section className="w-[40%]">
-                    <p className="text-[15px] mb-1">
-                      <span className="text-[15px] text-gray-700 pr-4 ">
-                        {" "}
-                        Principal:
-                      </span>{" "}
-                      <span className="font-semibold text-gray-800">
-                        2,000 birr
-                      </span>
-                    </p>
-                    <p className="text-[15px] mb-1">
-                      <span className="text-[15px] text-gray-700 pr-4 ">
-                        {" "}
-                        Income tax:
-                      </span>{" "}
-                      <span className="font-semibold text-gray-800">
-                        2,000 birr
-                      </span>
-                    </p>
-                  </section>
-                  <section className="">
-                    <p className="text-[15px] mb-1">
-                      <span className="text-[15px] text-gray-700 pr-4 ">
-                        {" "}
-                        Interest:
-                      </span>{" "}
-                      <span className="font-semibold text-gray-800">
-                        2,000 birr
-                      </span>
-                    </p>
-                    <p className="text-[15px] mb-1">
-                      <span className="text-[15px] text-red-600 pr-4 ">
-                        {" "}
-                        Penalty:
-                      </span>{" "}
-                      <span className="font-semibold text-gray-800">
-                        2,000 birr
-                      </span>
-                    </p>
-                  </section>
-                </div>
-              </section>
+          <section className="w-[90%] min-h-fit bg-white rounded-xl p-6 mb-6 border border-gray-100">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-800">
+                Payment Summary
+              </h2>
+              <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium">
+                Pending Payment
+              </span>
             </div>
-            {/* Outstanding Balance, Breakdown, Due Date, Payment Status */}
-            {/* Include a table or simple list */}
-          </section>
 
-          {/* 2. Payment Options */}
-          <section className="payment-options card">
-            <h2 className="text-lg text-gray-700 font-semibold mb-4">
-              How would you like to pay
-            </h2>
-            <div className="space-y-4">
+            <div className="w-full min-h-fit flex flex-col lg:flex-row gap-8">
+              {/* Payment Overview Card */}
+              <div className="w-full lg:w-[35%] bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-lg border border-blue-100">
+                <h3 className="text-sm font-semibold text-blue-800 uppercase tracking-wider mb-4">
+                  Payment Overview
+                </h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">
+                      Outstanding Amount
+                    </p>
+                    <p className="text-2xl font-bold text-gray-800">
+                      {approved && approved.length > 0
+                        ? approved
+                            .reduce(
+                              (total, item) => total + item.calculatedTax,
+                              0
+                            )
+                            .toLocaleString()
+                        : "0"}{" "}
+                      birr
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Due Date</p>
+                      <p className="font-medium text-gray-800">
+                        {new Date().toLocaleDateString("en-US", {
+                          weekday: "short",
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 text-blue-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Breakdown Section */}
+              <div className="w-full lg:w-[65%]">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-gray-500 mr-2"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Tax Breakdown
+                </h3>
+
+                {approved && approved.length > 0 ? (
+                  <div className="divide-y divide-gray-200">
+                    {approved.map((data) => {
+                      const filingDate = new Date(data.filingDate)
+                      const dueDate = new Date(
+                        filingDate.setMonth(filingDate.getMonth() + 1)
+                      )
+
+                      return (
+                        <div
+                          key={data._id}
+                          className="py-4 flex justify-between items-center"
+                        >
+                          <div>
+                            <p className="font-medium text-gray-800 capitalize">
+                              {data.taxCategory}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Due{" "}
+                              {dueDate.toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </p>
+                          </div>
+                          <p className="font-semibold text-blue-600">
+                            {data.calculatedTax.toLocaleString()} birr
+                          </p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-12 w-12 mx-auto text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1}
+                        d="M9 14h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    <p className="mt-2 text-gray-500">
+                      No approved filings available
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+          {/* 2. Select Tax Type to Pay */}
+          {taxTypes && taxTypes.length > 0 ? (
+            <motion.section
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="bg-white rounded-xl shadow-sm p-6 border border-gray-100"
+            >
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-blue-500 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"
+                    />
+                  </svg>
+                  Select Tax Type
+                </h2>
+                <p className="text-gray-500 text-sm">
+                  Choose the tax category you want to file
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {taxTypes?.map((tax) => (
+                  <motion.div
+                    key={tax.id}
+                    whileHover={{ y: -3 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setSelectedTax(tax?.id)}
+                    className={`cursor-pointer border-2 rounded-lg p-5 transition-all duration-200 flex flex-col
+          ${
+            selectedTax === tax.id
+              ? "border-blue-500 bg-blue-50 shadow-md"
+              : "border-gray-200 hover:border-blue-300 bg-white"
+          }`}
+                  >
+                    <div className="flex items-start mb-2">
+                      <div
+                        className={`flex-shrink-0 mt-1 mr-3 p-1 rounded-md ${
+                          selectedTax === tax.id
+                            ? "bg-blue-100 text-blue-600"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"
+                          />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800 capitalize">
+                          {tax.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {tax.description}
+                        </p>
+                      </div>
+                    </div>
+                    {selectedTax === tax.id && (
+                      <div className="mt-auto pt-2">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Selected
+                        </span>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            </motion.section>
+          ) : null}
+
+          {/* 3. Payment Options */}
+          <section className="payment-options bg-white rounded-xl shadow-md p-6 border border-gray-100">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-blue-500 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                  />
+                </svg>
+                Payment Method
+              </h2>
+              <p className="text-gray-500 text-sm">
+                Choose your preferred payment option
+              </p>
+            </div>
+
+            <div className="space-y-3">
               {/* Full Payment */}
-              <OptionCard
-                id="full"
-                title="Full Payment"
-                desc="Pay the total amount now."
-                selected={selected}
+              <div
+                className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                  selected === "full"
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-blue-300"
+                }`}
                 onClick={() => setSelected("full")}
-              />
-              <OptionCard
-                id="partial"
-                title="Partial Payment"
-                desc="Pay part of the total amount."
-                selected={selected}
+              >
+                <div className="flex items-start">
+                  <div
+                    className={`mt-1 mr-3 flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center ${
+                      selected === "full"
+                        ? "border-blue-500 bg-blue-500"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    {selected === "full" && (
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-800">
+                      Full Payment
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Pay the total amount now
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Partial Payment */}
+              <div
+                className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                  selected === "partial"
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-blue-300"
+                }`}
                 onClick={() => setSelected("partial")}
               >
-                {selected === "partial" && (
-                  <input
-                    type="number"
-                    placeholder="Enter amount"
-                    value={partialAmount}
-                    onChange={(e) => setPartialAmount(e.target.value)}
-                    className="mt-3 w-[50%] py-1 px-4 rounded-lg input input-bordered focus:outline-none focus:ring-2 focus:ring-gray-200 transition"
-                  />
-                )}
-              </OptionCard>
-
-              {/* Scheduled Payment */}
-              <OptionCard
-                id="scheduled"
-                title="Scheduled Payment"
-                desc="Set a future payment date."
-                selected={selected}
-                onClick={() => setSelected("scheduled")}
-              >
-                {selected === "scheduled" && (
-                  <input
-                    type="date"
-                    value={scheduledDate}
-                    onChange={(e) => setScheduledDate(e.target.value)}
-                    className="mt-3 w-[50%] py-1 px-4 input input-bordered focus:outline-none focus:ring-2 focus:ring-gray-200 transition"
-                  />
-                )}
-              </OptionCard>
-            </div>
-            {/* Full Amount, Partial Amount input, Scheduled Payment, Installment Plan */}
-            {/* Radio buttons or tab switcher */}
-          </section>
-
-          {/* 3. Select Tax Type to Pay */}
-          <motion.section
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="tax-type-selection card"
-          >
-            <h2 className="text-lg text-gray-700 font-semibold mb-4">
-              Select Tax Type
-            </h2>
-            <div className="w-[90%] grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {taxTypes.map((tax) => (
-                <div
-                  key={tax.id}
-                  onClick={() => setSelectedTax(tax.id)}
-                  className={`cursor-pointer border rounded-xl p-4 transition-all
-              ${
-                selectedTax === tax.id
-                  ? "border-blue-500 bg-blue-50 ring-2 ring-blue-300"
-                  : "border-gray-300 bg-gray-100"
-              }
-              hover:shadow-md`}
-                >
-                  <div className="text-[17px] font-semibold capitalize">
-                    {tax.name}
-                  </div>{" "}
-                  <div className="text-sm text-gray-500">{tax.description}</div>
+                <div className="flex items-start">
+                  <div
+                    className={`mt-1 mr-3 flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center ${
+                      selected === "partial"
+                        ? "border-blue-500 bg-blue-500"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    {selected === "partial" && (
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-gray-800">
+                          Partial Payment
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          Pay part of the total amount
+                        </p>
+                      </div>
+                      {selected === "partial" && (
+                        <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                          Enter amount
+                        </div>
+                      )}
+                    </div>
+                    {selected === "partial" && (
+                      <div className="mt-3 relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span className="text-gray-500">birr</span>
+                        </div>
+                        <input
+                          type="number"
+                          placeholder="0.00"
+                          value={partialAmount}
+                          onChange={(e) => setPartialAmount(e.target.value)}
+                          className="block w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              ))}
-            </div>
-
-            {selectedTax && (
-              <div className=" mt-4 text-green-600 font-medium">
-                Selected: {taxTypes.find((t) => t.id === selectedTax)?.name}
               </div>
-            )}
-            {/* Dropdown or list of tax types (with descriptions maybe) */}
-          </motion.section>
+            </div>
+          </section>
 
           {/* 4. Payment Methods */}
           <motion.section
@@ -263,19 +531,52 @@ export default function PayTax() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <h2 className="text-xl font-bold mb-4">Payment Method</h2>
-
-            <div className="w-[90%] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {paymentOptions.map((option) => (
-                <OptionCardPayment
-                  key={option.id}
-                  option={option}
-                  selected={selectedPayment}
-                  onSelect={() => setSelectedPayment(option.id)}
-                />
-              ))}
+            <div className="flex items-center gap-3 mb-6">
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                <Wallet className="w-6 h-6 text-indigo-600" />
+              </motion.div>
+              <motion.h2
+                initial={{ x: -10 }}
+                animate={{ x: 0 }}
+                className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent"
+              >
+                Payment Method
+              </motion.h2>
             </div>
-            {/* Radio buttons for payment methods + dynamic input depending on choice */}
+
+            <motion.div
+              className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ staggerChildren: 0.1 }}
+            >
+              {paymentOptions.map((option) => (
+                <motion.div
+                  key={option.id}
+                  whileHover={{ y: -5, scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                >
+                  <OptionCardPayment
+                    option={option}
+                    selected={selectedPayment}
+                    onSelect={() => setSelectedPayment(option.id)}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Animated divider */}
+            <motion.div
+              className="mt-8 mb-6 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"
+              initial={{ width: 0 }}
+              animate={{ width: "100%" }}
+              transition={{ delay: 0.6, duration: 0.8 }}
+            />
           </motion.section>
 
           {/* 5. Billing/Receipt Preview */}
@@ -286,8 +587,11 @@ export default function PayTax() {
           {/* Confirm Payment Button */}
           <div className="confirm-payment mt-6 flex justify-center">
             <button
-              className="btn-primary px-[78px] cursor-pointer py-3 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
-              onClick={() => setIsOpen(true)}
+              disabled={!selectedTax}
+              className="btn-primary disabled:bg-blue-400 disabled:cursor-not-allowed px-[78px] cursor-pointer py-3 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+              onClick={() => {
+                setIsOpen(true)
+              }}
             >
               Confirm & Pay
             </button>
@@ -314,17 +618,39 @@ export default function PayTax() {
             <form className="space-y-4 p-4">
               <div>
                 <label
+                  htmlFor="bank"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Select Bank:
+                </label>
+                <select
+                  id="bank"
+                  name="bank"
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  className="mt-2 w-full p-2 border border-gray-300 focus:border-gray-400 outline-none rounded-md"
+                >
+                  <option value="">Select a Bank</option>
+                  {banks.map((bank, index) => (
+                    <option key={index} value={bank}>
+                      {bank}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
                   htmlFor="bankName"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Bank Name
+                  Bank Number
                 </label>
                 <input
                   type="text"
-                  id="bankName"
-                  name="bankName"
-                  // value={formData.bankName}
-                  // onChange={handleInputChange}
+                  id="bankNumber"
+                  name="bankNumber"
+                  value={bankNumber}
+                  onChange={(e) => setBankNumber(e.target.value)}
                   className="mt-2 w-full p-2 border border-gray-300 focus:border-gray-400 outline-none rounded-md"
                   required
                 />
@@ -340,8 +666,8 @@ export default function PayTax() {
                   type="text"
                   id="senderName"
                   name="senderName"
-                  // value={formData.senderName}
-                  // onChange={handleInputChange}
+                  value={senderName}
+                  onChange={(e) => setSenderName(e.target.value)}
                   className="mt-2 w-full p-2 border border-gray-300 focus:border-gray-400 outline-none rounded-md"
                   required
                 />
@@ -362,21 +688,23 @@ export default function PayTax() {
                       Select Image
                     </label>
                     <span className="text-gray-500">
-                      {/* {formData.file ? formData.file.name : "No file selected"} */}{" "}
-                      No file selected
+                      {filePhoto ? filePhoto.name : "No file selected"} No file
+                      selected
                     </span>
                   </div>
                   <input
                     type="file"
                     id="file"
                     name="file"
-                    // onChange={handleFileChange}
+                    value={filePhoto}
+                    onChange={(e) => setFilePhoto(e.target.value)}
                     className="hidden" // Hide the default file input
                   />
                 </div>
               </div>
               <button
                 type="submit"
+                onClick={handlePayment}
                 className="mt-9 w-48 mx-auto p-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 cursor-pointer"
               >
                 Submit Payment
@@ -394,11 +722,11 @@ export default function PayTax() {
                   Phone Number
                 </label>
                 <input
-                  type="tele"
+                  type="tel"
                   id="phoneNumber"
                   name="phoneNumber"
-                  // value={formData.phoneNumber}
-                  // onChange={handleInputChange}
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
                   className="mt-2 w-full p-2 border border-gray-300 focus:border-gray-400 outline-none rounded-md"
                   required
                 />
@@ -419,21 +747,22 @@ export default function PayTax() {
                       Select Image
                     </label>
                     <span className="text-gray-500">
-                      {/* {formData.file ? formData.file.name : "No file selected"} */}{" "}
-                      No file selected
+                      {filePhoto ? filePhoto.name : "No file selected"}
                     </span>
                   </div>
                   <input
                     type="file"
                     id="file"
                     name="file"
-                    // onChange={handleFileChange}
+                    value={filePhoto}
+                    onChange={(e) => setFilePhoto(e.target.value)}
                     className="hidden" // Hide the default file input
                   />
                 </div>
               </div>
               <button
                 type="submit"
+                onClick={handlePayment}
                 className="mt-9 w-48 mx-auto p-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 cursor-pointer"
               >
                 Submit Payment
@@ -454,8 +783,8 @@ export default function PayTax() {
                   type="text"
                   id="phoneNumber"
                   name="phoneNumber"
-                  // value={formData.phoneNumber}
-                  // onChange={handleInputChange}
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
                   className="mt-2 w-full p-2 border border-gray-300 focus:border-gray-400 outline-none rounded-md"
                   required
                 />
@@ -476,22 +805,23 @@ export default function PayTax() {
                       Select Image
                     </label>
                     <span className="text-gray-500">
-                      {/* {formData.file ? formData.file.name : "No file selected"} */}{" "}
-                      No file selected
+                      {filePhoto ? filePhoto.name : "No file selected"}{" "}
                     </span>
                   </div>
                   <input
                     type="file"
                     id="file"
                     name="file"
-                    // onChange={handleFileChange}
+                    value={filePhoto}
+                    onChange={(e) => setFilePhoto(e.target.value)}
                     className="hidden" // Hide the default file input
                   />
                 </div>
               </div>
               <button
                 type="submit"
-                className="mt-9 w-48 mx-auto p-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 cursor-pointer"
+                onClick={handlePayment}
+                className="mt-9 w-48 disabled:bg-gray-200 disabled:cursor-not-allowed mx-auto p-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 cursor-pointer"
               >
                 Submit Payment
               </button>

@@ -11,8 +11,11 @@ import { logoutUser } from "@/services/apiUser"
 import { useNavigate } from "react-router-dom"
 import hero from "@/assets/logo.png"
 import toast from "react-hot-toast"
+import { useEffect, useState } from "react"
+import { getApprovedTaxFilingsForUser } from "@/services/Tax"
+import { Landmark } from "lucide-react"
 
-export default function Menu() {
+export default function Menu({ approved }) {
   const { user } = useSelector((store) => store.user)
   const { schedules } = useSelector((store) => store.filled)
   const navigate = useNavigate()
@@ -31,7 +34,6 @@ export default function Menu() {
     }
   }
 
-  console.log(schedules.length)
   return (
     <>
       <div
@@ -64,7 +66,7 @@ export default function Menu() {
             text={"Pay Tax"}
             path="/user/payTax"
             icon={<MdPayment size={23} />}
-            disabled={!isTaxSetupFinished || schedules.length == 0}
+            disabled={!isTaxSetupFinished || approved?.length == 0}
           />
           <DashboardLink
             text={"Tax Filing"}
@@ -76,6 +78,12 @@ export default function Menu() {
             text={"Payment History"}
             path="/user/history"
             icon={<MdHistory size={23} />}
+            disabled={!isTaxSetupFinished}
+          />
+          <DashboardLink
+            text={"Tax setup"}
+            path="/user/complete-tax-setup"
+            icon={<Landmark size={23} />}
             disabled={!isTaxSetupFinished}
           />
           <li className="pl-5 my-3">

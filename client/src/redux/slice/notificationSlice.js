@@ -56,6 +56,7 @@ const notificationSlice = createSlice({
   reducers: {
     clearNotifications: (state) => {
       state.items = []
+      console.log(state.items)
     },
   },
   extraReducers: (builder) => {

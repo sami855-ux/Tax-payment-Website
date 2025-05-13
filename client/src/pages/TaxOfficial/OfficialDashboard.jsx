@@ -33,6 +33,7 @@ import {
 import { useDispatch } from "react-redux"
 import { login } from "@/redux/slice/userSlice"
 import { getUserById } from "@/services/apiUser"
+import { fetchNotifications } from "@/redux/slice/notificationSlice"
 
 // Sample data
 const timelineData = [
@@ -125,6 +126,7 @@ export default function OfficialDashboard() {
         )
       }
     }
+    dispatch(fetchNotifications())
 
     getUserInfo()
   }, [])

@@ -1,52 +1,18 @@
 import React from "react"
 import { motion } from "framer-motion"
 import PaymentTable from "@/components/PaymentTable"
+import { useQuery } from "@tanstack/react-query"
+import { getPaymentsForOfficial } from "@/services/Tax"
+import Spinner from "@/ui/Spinner"
 
 const OfficialPayments = () => {
+  const { data, isLoading } = useQuery({
+    queryKey: ["assigned-payment"],
+    queryFn: getPaymentsForOfficial,
+  })
+
+  console.log(data)
   // Sample data - replace with your actual data
-  const paymentData = [
-    {
-      paymentId: "TXP123",
-      taxpayerName: "John Doe",
-      taxType: "VAT",
-      amount: 12000,
-      datePaid: "2025-04-20",
-      paymentMethod: "Bank Transfer",
-      status: "Verified",
-      taxpayerId: "TP123",
-    },
-    {
-      paymentId: "TXP124",
-      taxpayerName: "Jane Smith",
-      taxType: "Income Tax",
-      amount: 18500,
-      datePaid: "2025-04-22",
-      paymentMethod: "Credit Card",
-      status: "Pending",
-      taxpayerId: "TP124",
-    },
-    {
-      paymentId: "TXP123",
-      taxpayerName: "John Doe",
-      taxType: "VAT",
-      amount: 12000,
-      datePaid: "2025-04-20",
-      paymentMethod: "Bank Transfer",
-      status: "Verified",
-      taxpayerId: "TP123",
-    },
-    {
-      paymentId: "TXP124",
-      taxpayerName: "Jane Smith",
-      taxType: "Income Tax",
-      amount: 18500,
-      datePaid: "2025-04-22",
-      paymentMethod: "Credit Card",
-      status: "Pending",
-      taxpayerId: "TP124",
-    },
-    // Add more data as needed
-  ]
 
   const handleVerify = (paymentId, isApproved) => {
     console.log(`Payment ${paymentId} ${isApproved ? "approved" : "rejected"}`)
@@ -73,12 +39,16 @@ const OfficialPayments = () => {
         <h1 className="text-2xl font-bold text-gray-800">Tax Payments</h1>
         <p className="text-gray-600">Review and verify taxpayer submissions</p>
       </motion.div>
-      <PaymentTable
-        data={paymentData}
-        onVerify={handleVerify}
-        onView={handleView}
-        onSendReminder={handleSendReminder}
-      />
+      {isLoading ? (
+        <Spinner />
+      ) : (
+        <PaymentTable
+          data={data}
+          onVerify={handleVerify}
+          onView={handleView}
+          onSendReminder={handleSendReminder}
+        />
+      )}
     </div>
   )
 }

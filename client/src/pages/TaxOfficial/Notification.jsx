@@ -10,6 +10,12 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react"
+import { useDispatch, useSelector } from "react-redux"
+import {
+  markNotificationAsRead,
+  removeNotification,
+} from "@/redux/slice/notificationSlice"
+import { markAllNotificationsRead } from "@/services/notification"
 
 // Mock data matching your schema
 const mockNotifications = [
@@ -48,7 +54,9 @@ const mockNotifications = [
 ]
 
 const Notification = () => {
-  const [notifications, setNotifications] = useState(mockNotifications)
+  const { loading, items } = useSelector((store) => store.notification)
+  const dispatch = useDispatch()
+  const [notifications, setNotifications] = useState(items)
   const [unreadCount, setUnreadCount] = useState(0)
   const [expandedId, setExpandedId] = useState(null)
   const [filter, setFilter] = useState("all")
@@ -68,19 +76,27 @@ const Notification = () => {
 
   // Mark as read
   const markAsRead = (id) => {
-    setNotifications(
-      notifications.map((n) => (n._id === id ? { ...n, read: true } : n))
-    )
+    const updatedNotifications = notifications?.map((notification) => {
+      if (notification._id === id) {
+        return { ...notification, read: true } // Mark the notification as read
+      }
+      return notification // Leave other notifications unchanged
+    })
+
+    setNotifications(updatedNotifications)
+    dispatch(markNotificationAsRead(id))
   }
 
   // Mark all as read
-  const markAllAsRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, read: true })))
+  const markAllAsRead = async () => {
+    setNotifications(notifications?.map((n) => ({ ...n, read: true })))
+    await markAllNotificationsRead()
   }
 
   // Delete notification
   const deleteNotification = (id) => {
-    setNotifications(notifications.filter((n) => n._id !== id))
+    setNotifications(notifications?.filter((n) => n._id !== id))
+    dispatch(removeNotification(id))
   }
 
   // Get icon based on notification type

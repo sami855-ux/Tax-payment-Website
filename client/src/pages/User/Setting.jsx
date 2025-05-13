@@ -14,9 +14,6 @@ import { useNavigate } from "react-router-dom"
 const sections = [
   { id: "profile", label: "Profile" },
   { id: "security", label: "Security" },
-  { id: "payments", label: "Payments" },
-  { id: "tax", label: "Tax Preferences" },
-  { id: "notifications", label: "Notifications" },
   { id: "account", label: "Account" },
 ]
 

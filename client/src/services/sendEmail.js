@@ -2,7 +2,7 @@ import axios from "axios"
 
 export const sendEmail = async (data) => {
   try {
-    const res = axios.post(
+    const res = await axios.post(
       `${import.meta.env.VITE_BASE_URL}/api/email/send`,
       data,
       {
@@ -11,8 +11,10 @@ export const sendEmail = async (data) => {
         },
       }
     )
-    if (res.success) {
+    if (res.data.success) {
       return res.data
+    } else {
+      return { error: res.message || "Failed to send email" }
     }
   } catch (error) {
     console.error("Error sending email:", error)

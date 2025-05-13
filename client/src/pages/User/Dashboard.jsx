@@ -16,14 +16,16 @@ import { BsTags } from "react-icons/bs"
 import LineChart from "./LineChart"
 import PieChart from "./PieChart"
 import Button from "@/ui/Button"
-import { getPendingTaxSchedules } from "@/services/Tax"
-import { CalendarDays } from "lucide-react"
+import { fetchPendingTaxFilings, getPendingTaxSchedules } from "@/services/Tax"
+import { CalendarDays, Loader } from "lucide-react"
+import useUserPayments from "@/context/useUserPayment"
 
 export default function UserDashboard() {
+  const { data: dataPayment, isLoading } = useUserPayments()
   const { user } = useSelector((store) => store.user)
-  const { filedPeriods } = useSelector((store) => store.filled)
 
-  console.log(filedPeriods)
+  const totalTax = dataPayment?.reduce((acc, item) => acc + item.amount, 0)
+
   const dispatch = useDispatch()
 
   const [pending, setPending] = useState([])
@@ -31,30 +33,16 @@ export default function UserDashboard() {
   useEffect(() => {
     document.title = "Dashboard"
 
-    const getUserInfo = async () => {
-      const res = await getUserById()
-
-      if (res.success) {
-        dispatch(
-          login({
-            user: res.user,
-          })
-        )
-
-        dispatch(clearNotifications())
-      }
-    }
-
     const handleNotification = async () => {
       await checkTaxSetup()
     }
 
     const handlePending = async () => {
-      const res = await getPendingTaxSchedules()
-      setPending(res.schedules)
+      const res = await fetchPendingTaxFilings()
+      console.log(res)
+      setPending(res.filings)
     }
 
-    getUserInfo()
     handleNotification()
     handlePending()
     dispatch(fetchNotifications())
@@ -90,11 +78,19 @@ export default function UserDashboard() {
             "
             />
           </div>
-          <p className="text-3xl font-semibold text-white">450,000 birr</p>
-          <p className="text-sm text-gray-200 py-6 flex items-center gap-1">
-            <FaArrowUp color="white" />
-            <span className="text-white">6.56% from last year</span>
-          </p>
+          {isLoading ? (
+            <Loader className="animate-spin" />
+          ) : (
+            <>
+              <p className="text-3xl font-semibold text-white">
+                {totalTax} birr
+              </p>
+              <p className="text-sm text-gray-200 py-6 flex items-center gap-1">
+                <FaArrowUp color="white" />
+                <span className="text-white">6.56% from last year</span>
+              </p>
+            </>
+          )}
         </section>
         <section className="h-full w-full md:w-[370px] lg:w-[270px] bg-gray-100 rounded-md px-6 py-5">
           <div className="w-full h-16 flex items-center justify-between">
@@ -139,21 +135,73 @@ export default function UserDashboard() {
         <div className="h-52 md:w-[450px] lg:w-80 rounded-md bg-gray-100 border-gray-300 flex gap-2 pt-2">
           <div className="flex p-6 gap-3">
             <div>
-              <p className="text-lg font-semibold text-gray-700 mb-4">
-                Next Due Date
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-lg font-semibold text-gray-700 mb-4">
+                  Next Due Date
+                </p>
+                <span className="px-3 mb-7 text-[14px] bg-amber-200 rounded-full ">
+                  {pending.length === 0 ? null : pending.length}
+                </span>
+              </div>
               <h3 className="text-lg font-semibold text-blue-900">
-                {pending.map((data, dataIndex) => (
-                  <span
-                    key={dataIndex}
-                    className="text-sm text-blue-900 font-light capitalize block mb-1"
-                  >
-                    <span className="font-semibold text-blue-600">
-                      {data.taxCategory} tax due on
-                    </span>{" "}
-                    {new Date(data.dueDate).toLocaleDateString()}
-                  </span>
-                ))}
+                {pending && pending.length > 0 ? (
+                  pending?.slice(0, 2).map((data, dataIndex) => (
+                    <div
+                      key={dataIndex}
+                      className="flex items-center py-2 px-3 mb-2 bg-blue-50 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors"
+                    >
+                      <svg
+                        className="w-4 h-4 text-blue-500 mr-2 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span className="text-sm text-blue-900">
+                        <span className="font-semibold text-blue-700 capitalize">
+                          {data.taxCategory}
+                        </span>
+                        <span className="text-blue-600 mx-1">tax due on</span>
+                        <span className="font-medium text-blue-800">
+                          {new Date(data.filingDate).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            }
+                          )}
+                        </span>
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="inline-flex items-center px-3 py-2 rounded-lg bg-gray-50 border border-gray-200">
+                    <svg
+                      className="w-5 h-5 text-gray-500 mr-2.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <p className="text-sm font-medium text-gray-600">
+                      No upcoming due dates
+                    </p>
+                  </div>
+                )}
               </h3>
             </div>
             <CalendarDays className="w-10 h-10 text-blue-700" />
@@ -180,14 +228,14 @@ export default function UserDashboard() {
           </p>
         </section>
       </motion.div>
-      <div className="w-full flex flex-col bg-white mt-6 rounded-lg gap-7 h-[400px] p-5">
+      <div className="w-full flex flex-col bg-white mt-6 rounded-lg gap-7 h-fit p-5">
         <h2 className="font-semibold text-xl text-gray-700">
           {" "}
           Payment History
         </h2>
 
-        <div className="w-full overflow-x-scroll h-[50vh]">
-          <HistoryTable />
+        <div className="w-full overflow-x-scroll h-[500px]">
+          <HistoryTable path="not" />
         </div>
       </div>
     </div>

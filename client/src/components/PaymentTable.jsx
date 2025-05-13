@@ -24,7 +24,9 @@ const PaymentTable = ({ data, onVerify, onView, onSendReminder }) => {
         Header: "Payment ID",
         accessor: "paymentId",
         Cell: ({ value }) => (
-          <span className="font-mono text-blue-600">{value}</span>
+          <span className="font-mono text-blue-600">
+            {`${value.slice(0, 20)}` + "..."}
+          </span>
         ),
       },
       {
@@ -200,7 +202,7 @@ const PaymentTable = ({ data, onVerify, onView, onSendReminder }) => {
   } = useTable(
     {
       columns,
-      data,
+      data: data || [],
       defaultColumn,
       initialState: { pageIndex: 0, pageSize: 10 },
     },

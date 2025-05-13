@@ -21,10 +21,11 @@ import {
 import toast from "react-hot-toast"
 import { createTaxFiling } from "@/services/Tax"
 import { fetchFiledTaxSchedules } from "@/redux/slice/taxschedule"
+import { readFileAsDataURL } from "@/helpers/util"
 
 const getFrequency = (category) => {
-  if (category === "vat") return "monthly"
-  if (category === "personal" || category === "property") return "yearly"
+  if (category === "vat" || category === "personal") return "monthly"
+  if (category === "property") return "yearly"
   if (category === "business") return "quarterly"
   return null
 }
@@ -84,22 +85,29 @@ export default function TaxFilling() {
   const [additionalNotes, setAdditionalNotes] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [file, setFile] = useState(null)
+  const [filePreview, setFilePreview] = useState("")
   const dispatch = useDispatch()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
 
-    const data = {
-      taxCategory: taxCategory,
-      filingPeriod: taxPeriod,
-      totalAmount: referenceNumber,
-      paymentPurpose: paymentPurpose,
-      documentFiled: file,
-      notes: additionalNotes,
+    const formData = new FormData()
+
+    formData.append("taxCategory", taxCategory)
+    formData.append("filingPeriod", taxPeriod)
+    formData.append("totalAmount", referenceNumber)
+    formData.append("paymentPurpose", paymentPurpose)
+    formData.append("notes", additionalNotes)
+
+    // Conditionally append file only if selected
+    if (filePreview && file) {
+      formData.append("documentFiled", file)
     }
+
+    console.log(file)
     try {
-      const res = await createTaxFiling(data)
+      const res = await createTaxFiling(formData)
 
       if (res.success) {
         toast.success(res.message)
@@ -109,6 +117,9 @@ export default function TaxFilling() {
         setReferenceNumber("")
         setPaymentPurpose("")
         setFile("")
+        setAdditionalNotes("")
+        setFile("")
+        setFilePreview("")
 
         dispatch(fetchFiledTaxSchedules())
       } else {
@@ -121,10 +132,12 @@ export default function TaxFilling() {
     }
   }
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0]
-    if (selectedFile) {
-      setFile(selectedFile)
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setFile(file)
+      const dataUrl = await readFileAsDataURL(file)
+      setFilePreview(dataUrl)
     }
   }
 
@@ -268,6 +281,19 @@ export default function TaxFilling() {
                   PDF, JPG, or PNG (max. 5MB)
                 </p>
               </div>
+              {filePreview && (
+                <motion.div
+                  className="flex items-center justify-center w-full h-64 overflow-hidden rounded-md"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <img
+                    src={filePreview}
+                    alt="preview_img"
+                    className="object-contain w-full h-full"
+                  />
+                </motion.div>
+              )}
               <input
                 type="file"
                 onChange={handleFileChange}

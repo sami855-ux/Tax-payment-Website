@@ -43,7 +43,7 @@ const VerifyTaxFilling = () => {
       submittedOn: filing.submittedOn
         ? new Date(filing.submittedOn).toLocaleDateString()
         : "N/A",
-      documents: filing.documents || [],
+      documents: filing.documentFiled || [],
       taxpayerId: filing.taxpayerId,
     }))
   }, [fillingData])
@@ -455,19 +455,7 @@ const VerifyTaxFilling = () => {
                     Supporting Documents
                   </h3>
                   <div className="space-y-2">
-                    {selectedFiling.documents.map((doc, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                      >
-                        <span className="text-sm font-medium text-gray-900">
-                          {doc}
-                        </span>
-                        <button className="text-blue-600 hover:text-blue-800 flex items-center text-sm">
-                          <FiDownload className="mr-1" /> Download
-                        </button>
-                      </div>
-                    ))}
+                    <img src={selectedFiling.documents} alt="" />
                   </div>
                 </div>
 

@@ -9,11 +9,11 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Loader2,
 } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
 import Spinner from "@/ui/Spinner"
 import {
-  fetchNotifications,
   markNotificationAsRead,
   removeNotification,
 } from "@/redux/slice/notificationSlice"
@@ -34,6 +34,7 @@ const NotificationUser = () => {
   useEffect(() => {
     const count = notifications.filter((n) => !n.read).length
     setUnreadCount(count)
+    // dispatch(fetchNotifications())
   }, [notifications])
 
   // Filter notifications
@@ -52,7 +53,6 @@ const NotificationUser = () => {
       return notification // Leave other notifications unchanged
     })
 
-    // Update the state with the modified notifications
     setNotifications(updatedNotifications)
     dispatch(markNotificationAsRead(id))
   }
@@ -96,8 +96,6 @@ const NotificationUser = () => {
 
     return diff
   }
-
-  if (loading) return <Spinner />
 
   return (
     <div className="w-full py-6 px-8 min-h-screen">
@@ -146,123 +144,131 @@ const NotificationUser = () => {
       </div>
 
       {/* Notifications list */}
-      <div className="space-y-3">
-        <AnimatePresence>
-          {filteredNotifications.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-12 text-gray-500"
-            >
-              No notifications found
-            </motion.div>
-          ) : (
-            filteredNotifications.map((notification) => (
+      {loading ? (
+        <div className="w-full h-56 flex items-center justify-center">
+          <Loader2 className="animate-spin w-16 h-16" />
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <AnimatePresence>
+            {filteredNotifications.length === 0 ? (
               <motion.div
-                key={notification._id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                className={`rounded-xl shadow-sm border overflow-hidden ${
-                  !notification.read
-                    ? "bg-blue-50/30 border-blue-100"
-                    : "bg-white border-gray-200"
-                }`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-12 text-gray-500"
               >
-                <div className="p-4">
-                  <div className="flex gap-3">
-                    <div className="mt-0.5">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-
-                    <div className="flex-1">
-                      <div className="flex justify-between">
-                        <h3
-                          className={`font-medium ${
-                            !notification.read
-                              ? "text-gray-900"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          {notification.message}
-                        </h3>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() =>
-                              setExpandedId(
-                                expandedId === notification._id
-                                  ? null
-                                  : notification._id
-                              )
-                            }
-                            className="text-gray-400 hover:text-gray-600"
-                          >
-                            {expandedId === notification._id ? (
-                              <ChevronUp size={18} />
-                            ) : (
-                              <ChevronDown size={18} />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => deleteNotification(notification._id)}
-                            className="text-gray-400 hover:text-gray-600"
-                          >
-                            <X size={18} />
-                          </button>
-                        </div>
+                No notifications found
+              </motion.div>
+            ) : (
+              filteredNotifications.map((notification) => (
+                <motion.div
+                  key={notification._id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  className={`rounded-xl shadow-sm border overflow-hidden ${
+                    !notification.read
+                      ? "bg-blue-50/30 border-blue-100"
+                      : "bg-white border-gray-200"
+                  }`}
+                >
+                  <div className="p-4">
+                    <div className="flex gap-3">
+                      <div className="mt-0.5">
+                        {getNotificationIcon(notification.type)}
                       </div>
 
-                      <div className="flex justify-between items-center mt-1">
-                        <span className="text-xs text-gray-500">
-                          {formatTime(notification.createdAt)}
-                        </span>
-
-                        {!notification.read && (
-                          <button
-                            onClick={() => markAsRead(notification._id)}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+                      <div className="flex-1">
+                        <div className="flex justify-between">
+                          <h3
+                            className={`font-medium ${
+                              !notification.read
+                                ? "text-gray-900"
+                                : "text-gray-700"
+                            }`}
                           >
-                            Mark as read
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <AnimatePresence>
-                    {expandedId === notification._id && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                          {notification.link ? (
-                            <Link
-                              to={notification.link}
-                              className="inline-block px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100"
+                            {notification.message}
+                          </h3>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() =>
+                                setExpandedId(
+                                  expandedId === notification._id
+                                    ? null
+                                    : notification._id
+                                )
+                              }
+                              className="text-gray-400 hover:text-gray-600"
                             >
-                              View details
-                            </Link>
-                          ) : (
-                            <span className="text-sm text-gray-500">
-                              No action available
-                            </span>
+                              {expandedId === notification._id ? (
+                                <ChevronUp size={18} />
+                              ) : (
+                                <ChevronDown size={18} />
+                              )}
+                            </button>
+                            <button
+                              onClick={() =>
+                                deleteNotification(notification._id)
+                              }
+                              className="text-gray-400 hover:text-gray-600"
+                            >
+                              <X size={18} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center mt-1">
+                          <span className="text-xs text-gray-500">
+                            {formatTime(notification.createdAt)}
+                          </span>
+
+                          {!notification.read && (
+                            <button
+                              onClick={() => markAsRead(notification._id)}
+                              className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+                            >
+                              Mark as read
+                            </button>
                           )}
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
-            ))
-          )}
-        </AnimatePresence>
-      </div>
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {expandedId === notification._id && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            {notification.link ? (
+                              <Link
+                                to={notification.link}
+                                className="inline-block px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100"
+                              >
+                                View details
+                              </Link>
+                            ) : (
+                              <span className="text-sm text-gray-500">
+                                No action available
+                              </span>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   )
 }
