@@ -93,6 +93,10 @@ const UserSchema = new mongoose.Schema(
         description: String,
       },
     },
+    noticesSent: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 )

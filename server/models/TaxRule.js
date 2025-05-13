@@ -5,7 +5,7 @@ const taxRuleSchema = new mongoose.Schema({
   category: { type: String, required: true },
   type: {
     type: String,
-    enum: ["fixed", "percentage", "progressive"],
+    enum: ["Fixed", "Percentage", "Progressive"],
     required: true,
   },
   fixedAmount: Number, // used if type === "fixed"

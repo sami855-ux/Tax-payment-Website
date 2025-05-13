@@ -10,6 +10,6 @@ const router = express.Router()
 
 router.post("/create", isAuthenticated, createTaxFiling)
 router.get("/assigned", isAuthenticated, getAllAssignedTaxpayerFilings)
-router.get("/review", isAuthenticated, reviewTaxFiling)
+router.post("/review", isAuthenticated, reviewTaxFiling)
 
 export default router

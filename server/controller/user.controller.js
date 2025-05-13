@@ -10,6 +10,7 @@ import {
 } from "./Notification.controller.js"
 import { generateInitialSchedules } from "./TaxSchedule.controller.js"
 import Notification from "../models/Notification.js"
+import mongoose from "mongoose"
 
 dotenv.config()
 
@@ -394,40 +395,87 @@ export const assignOfficialToTaxpayer = async (req, res) => {
   try {
     const { taxpayerId, officialId } = req.body
 
-    // Validate existence
-    const taxpayer = await User.findById(taxpayerId)
-    const official = await User.findById(officialId)
-
-    if (!taxpayer || !official) {
-      return res.status(404).json({ success: false, message: "User not found" })
-    }
-
-    if (official.role !== "official") {
+    // Validate ObjectId format first
+    if (
+      !mongoose.Types.ObjectId.isValid(taxpayerId) ||
+      !mongoose.Types.ObjectId.isValid(officialId)
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Selected user is not a tax official",
+        error: "Invalid ID format provided.",
       })
     }
 
-    taxpayer.assignedOfficial = officialId
-    await taxpayer.save()
+    if (!taxpayerId || !officialId) {
+      return res.status(400).json({
+        success: false,
+        error: "Both taxpayerId and officialId are required.",
+      })
+    }
 
-    await Notification.create({
-      recipient: officialId,
-      recipientModel: "official",
-      type: "info",
-      message: `You have been assigned to a new taxpayer, See it in manage user route`,
-      link: "/official/taxpayer",
+    // Check if the taxpayer already has an official assigned
+    const existingTaxpayer = await User.findById(taxpayerId).select(
+      "assignedOfficial"
+    )
+    if (existingTaxpayer && existingTaxpayer.assignedOfficial) {
+      return res.status(400).json({
+        success: false,
+        error: "This taxpayer already has an official assigned.",
+      })
+    }
+
+    // Make sure the official is actually an official
+    const official = await User.findOne({
+      _id: new mongoose.Types.ObjectId(officialId),
+      role: "official",
     })
+
+    if (!official) {
+      return res.status(404).json({
+        success: false,
+        error: "Official not found or not valid.",
+      })
+    }
+
+    // Count how many taxpayers are already assigned to this official
+    const assignedCount = await User.countDocuments({
+      assignedOfficial: new mongoose.Types.ObjectId(officialId),
+    })
+
+    if (assignedCount >= 20) {
+      return res.status(400).json({
+        success: false,
+        error:
+          "This official is already assigned to the maximum number of taxpayers (20).",
+      })
+    }
+
+    // Assign the official to the taxpayer
+    const updatedTaxpayer = await User.findOneAndUpdate(
+      { _id: new mongoose.Types.ObjectId(taxpayerId) },
+      { assignedOfficial: new mongoose.Types.ObjectId(officialId) },
+      { new: true }
+    )
+
+    if (!updatedTaxpayer) {
+      return res.status(404).json({
+        success: false,
+        error: "Taxpayer not found.",
+      })
+    }
 
     res.status(200).json({
       success: true,
-      message: "Official assigned successfully",
-      taxpayer,
+      message: "Official assigned successfully.",
+      taxpayer: updatedTaxpayer,
     })
   } catch (error) {
-    console.error("Assign error:", error)
-    res.status(500).json({ success: false, message: "Internal server error" })
+    console.error("Error assigning official:", error)
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      details: error.message,
+    })
   }
 }
 
@@ -436,21 +484,103 @@ export const getTaxpayersByOfficial = async (req, res) => {
   try {
     const officialId = req.userId
 
-    const taxpayers = await User.find({ assignedOfficial: officialId })
+    const taxpayersWithLastFiling = await User.aggregate([
+      {
+        $match: {
+          assignedOfficial: new mongoose.Types.ObjectId(officialId),
+        },
+      },
+      {
+        $lookup: {
+          from: "taxfilings", // match your actual collection name
+          localField: "_id",
+          foreignField: "taxpayer",
+          as: "filings",
+        },
+      },
+      {
+        $addFields: {
+          lastFilingDate: { $max: "$filings.filingDate" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "assignedOfficial",
+          foreignField: "_id",
+          as: "officialInfo",
+        },
+      },
+      {
+        $unwind: {
+          path: "$officialInfo",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          fullName: 1,
+          taxId: 1,
+          kebele: 1,
+          phone: "$phoneNumber",
+          lastFilingDate: 1,
+          isTaxSetupComplete: 1,
+          noticesSent: 1,
+          profilePhoto: 1,
+          wereda: 1,
+          email: 1,
+          taxCategories: 1,
+          taxDetails: 1,
+          gender: 1,
+          role: 1,
+          assignedOfficial: 1,
+          officialName: "$officialInfo.fullName",
+          assignedDate: "$updatedAt", // or "createdAt" if that's when assignment was done
+        },
+      },
+    ])
 
-    res.status(200).json({ success: true, taxpayers })
+    res.status(200).json({ success: true, taxpayers: taxpayersWithLastFiling })
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Could not retrieve taxpayers" })
+    console.error("Failed to fetch taxpayers:", error)
+    res.status(500).json({
+      success: false,
+      message: "Could not retrieve taxpayers",
+      error: error.message,
+    })
   }
 }
 
 export const getAllOfficials = async (req, res) => {
+  console.log("hi")
   try {
-    const officials = await User.find({ role: "official" }).select(
-      "name email _id profilePhoto"
-    )
+    const officials = await User.aggregate([
+      {
+        $match: { role: "official" },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "assignedOfficial",
+          as: "assignedTaxpayers",
+        },
+      },
+      {
+        $addFields: {
+          assignedCount: { $size: "$assignedTaxpayers" },
+        },
+      },
+      {
+        $project: {
+          fullName: 1,
+          email: 1,
+          _id: 1,
+          profilePhoto: 1,
+          assignedCount: 1,
+        },
+      },
+    ])
 
     res.status(200).json({
       success: true,
@@ -462,6 +592,38 @@ export const getAllOfficials = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch officials",
+    })
+  }
+}
+
+export const increaseNoticesSent = async (req, res) => {
+  try {
+    const { taxpayerId } = req.params // Assume taxpayerId is passed in the URL
+    const user = await User.findById(taxpayerId)
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "Taxpayer not found.",
+      })
+    }
+
+    // Increase noticesSent by 1
+    user.noticesSent += 1
+
+    // Save the updated user
+    await user.save()
+
+    res.status(200).json({
+      success: true,
+      message: "Notices sent count increased by 1.",
+      noticesSent: user.noticesSent,
+    })
+  } catch (error) {
+    console.error("Error updating notices sent:", error)
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
     })
   }
 }

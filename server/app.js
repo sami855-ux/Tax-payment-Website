@@ -37,7 +37,7 @@ app.use("/api/rule", taxRuleRoutes)
 app.use("/api/export", exportRoutes)
 app.use("/api/email", sendEmailRoute)
 app.use("/api/filling", taxFillingRoutes)
-app.use("/api/schedule/", taxScheduleRoutes)
+app.use("/api/schedule", taxScheduleRoutes)
 app.use("/api/notifications", notificationRoute)
 
 const PORT = process.env.PORT || 5000

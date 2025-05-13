@@ -1,13 +1,16 @@
 import express from "express"
 import {
   assignOfficialToTaxpayer,
+  // assignOfficialToTaxpayer,
   changeUserRole,
   completeTaxSetup,
   deleteTaxpayer,
   getAllOfficials,
   getAllUser,
   getTaxpayersByOfficial,
+  // getTaxpayersByOfficial,
   getUserById,
+  increaseNoticesSent,
   isAuthenticated,
   login,
   logoutUser,
@@ -20,6 +23,14 @@ import { loginValidation } from "../validators/login.js"
 
 const router = express.Router()
 
+//! assign official to taxpayer => Admin
+router.patch("/assign", isAuthenticated, assignOfficialToTaxpayer)
+
+router.patch("/:taxpayerId/increase-notice", increaseNoticesSent)
+
+router.get("/official", getAllOfficials)
+// get all taxpayer for officials
+router.get("/get-taxpayer", isAuthenticated, getTaxpayersByOfficial)
 //To register
 router.post("/register", registerValidation, register)
 // To Login
@@ -38,11 +49,7 @@ router.post("/logout", logoutUser)
 router.patch("/role/:id", isAuthenticated, changeUserRole)
 //complete tax setup
 router.post("/tax-setup", isAuthenticated, completeTaxSetup)
-//! assign official to taxpayer => Admin
-router.post("/assign", isAuthenticated, assignOfficialToTaxpayer)
-// get all taxpayer for officials
-router.get("/get-taxpayer", isAuthenticated, getTaxpayersByOfficial)
+
 // get all official
-router.get("/official", isAuthenticated, getAllOfficials)
 
 export default router

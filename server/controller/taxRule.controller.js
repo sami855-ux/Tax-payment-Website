@@ -1,6 +1,5 @@
 import TaxRule from "../models/TaxRule.js"
 
-// Utility: Validate progressive brackets
 const validateBrackets = (brackets) => {
   if (!Array.isArray(brackets) || brackets.length === 0) {
     return "Progressive tax rules must include at least one bracket."
@@ -30,20 +29,28 @@ const validateBrackets = (brackets) => {
 
 export const createTaxRule = async (req, res) => {
   try {
-    const {
-      name,
-      category,
-      type,
-      year,
-      fixedAmount,
-      percentageRate,
-      brackets,
-      purpose,
-    } = req.body
+    const { name, category, type, year, fixed, percentage, bracket, purpose } =
+      req.body
 
     if (!name || !category || !type || !year) {
       return res.status(400).json({
+        success: false,
         error: "Missing required fields: name, category, type, or year.",
+      })
+    }
+
+    // 🔎 Check for duplicate category for the same year
+    const existingRule = await TaxRule.findOne({
+      category,
+      year: new Date(year),
+    })
+
+    if (existingRule) {
+      return res.status(409).json({
+        success: false,
+        error: `A tax rule for category '${category}' already exists for the year ${new Date(
+          year
+        ).getFullYear()}.`,
       })
     }
 
@@ -51,49 +58,189 @@ export const createTaxRule = async (req, res) => {
       name,
       category,
       type,
-      year,
+      year: new Date(year),
       purpose,
       isActive: true,
     }
 
-    if (type === "fixed") {
-      if (typeof fixedAmount !== "number" || fixedAmount < 0) {
-        return res
-          .status(400)
-          .json({ error: "Fixed amount must be a positive number." })
+    if (type === "Fixed") {
+      if (typeof fixed !== "number" || fixed < 0) {
+        return res.status(400).json({
+          error: "Fixed amount must be a positive number.",
+          success: false,
+        })
       }
-      newTaxRuleData.fixedAmount = fixedAmount
-    } else if (type === "percentage") {
+      newTaxRuleData.fixedAmount = fixed
+    } else if (type === "Percentage") {
       if (
-        typeof percentageRate !== "number" ||
-        percentageRate < 0 ||
-        percentageRate > 100
+        typeof percentage !== "number" ||
+        percentage < 0 ||
+        percentage > 100
       ) {
         return res.status(400).json({
           error: "Percentage rate must be a number between 0 and 100.",
+          success: false,
         })
       }
-      newTaxRuleData.percentageRate = percentageRate
-    } else if (type === "progressive") {
-      const bracketError = validateBrackets(brackets)
+      newTaxRuleData.percentageRate = percentage
+    } else if (type === "Progressive") {
+      const bracketError = validateBrackets(bracket)
       if (bracketError) {
-        return res.status(400).json({ error: bracketError })
+        return res.status(400).json({ error: bracketError, success: false })
       }
-      newTaxRuleData.brackets = brackets
+      newTaxRuleData.brackets = bracket
     } else {
       return res.status(400).json({
-        error: "Invalid tax rule type. Use fixed, percentage, or progressive.",
+        error: "Invalid tax rule type. Use Fixed, Percentage, or Progressive.",
+        success: false,
       })
     }
 
     const newTaxRule = new TaxRule(newTaxRuleData)
     await newTaxRule.save()
 
-    res
-      .status(201)
-      .json({ message: "Tax rule created successfully", taxRule: newTaxRule })
+    res.status(201).json({
+      message: "Tax rule created successfully",
+      taxRule: newTaxRule,
+      success: true,
+    })
   } catch (error) {
     console.error("Error creating tax rule:", error)
     res.status(500).json({ error: "Internal server error" })
+  }
+}
+
+export const getAllTaxRules = async (req, res) => {
+  try {
+    const taxRules = await TaxRule.find().sort({ year: -1 })
+
+    res.status(200).json({
+      success: true,
+      count: taxRules.length,
+      taxRules,
+    })
+  } catch (error) {
+    console.error("Error fetching tax rules:", error)
+    res.status(500).json({
+      success: false,
+      error: "Failed to retrieve tax rules. Please try again later.",
+    })
+  }
+}
+export const updateTaxRule = async (req, res) => {
+  try {
+    const { id } = req.params
+    const {
+      name,
+      category,
+      type,
+      year,
+      purpose,
+      isActive,
+      fixed,
+      percentage,
+      bracket,
+    } = req.body
+
+    const taxRule = await TaxRule.findById(id)
+    if (!taxRule) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Tax rule not found" })
+    }
+
+    // General fields
+    if (name !== undefined) taxRule.name = name
+    if (category !== undefined) taxRule.category = category
+    if (year !== undefined) taxRule.year = year
+    if (purpose !== undefined) taxRule.purpose = purpose
+    if (isActive !== undefined) taxRule.isActive = isActive
+
+    // If type is being updated, reset other values
+    if (type !== undefined) {
+      if (!["Fixed", "Percentage", "Progressive"].includes(type)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid type. Must be Fixed, Percentage, or Progressive.",
+        })
+      }
+      taxRule.type = type
+      taxRule.fixedAmount = undefined
+      taxRule.percentageRate = undefined
+      taxRule.brackets = []
+    }
+
+    // Type-specific updates (based on either new or existing type)
+    const finalType = type || taxRule.type
+
+    if (finalType === "Fixed" && fixedA !== undefined) {
+      if (typeof fixed !== "number" || fixed < 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Fixed amount must be a positive number.",
+        })
+      }
+      taxRule.fixedAmount = fixed
+    }
+
+    if (finalType === "Percentage" && percentage !== undefined) {
+      if (
+        typeof percentage !== "number" ||
+        percentage < 0 ||
+        percentage > 100
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: "Percentage rate must be a number between 0 and 100.",
+        })
+      }
+      taxRule.percentageRate = percentage
+    }
+
+    if (finalType === "Progressive" && bracket !== undefined) {
+      const bracketError = validateBrackets(bracket)
+      if (bracketError) {
+        return res.status(400).json({ success: false, error: bracketError })
+      }
+      taxRule.brackets = bracket
+    }
+
+    await taxRule.save()
+
+    res.status(200).json({
+      success: true,
+      message: "Tax rule updated successfully.",
+      taxRule,
+    })
+  } catch (error) {
+    console.error("Error updating tax rule:", error)
+    res.status(500).json({ success: false, error: "Internal server error" })
+  }
+}
+
+export const deleteTaxRule = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const deletedTaxRule = await TaxRule.findByIdAndDelete(id)
+
+    if (!deletedTaxRule) {
+      return res.status(404).json({
+        success: false,
+        error: "Tax rule not found.",
+      })
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Tax rule deleted successfully.",
+      deletedTaxRule,
+    })
+  } catch (error) {
+    console.error("Error deleting tax rule:", error)
+    res.status(500).json({
+      success: false,
+      error: "Internal server error.",
+    })
   }
 }

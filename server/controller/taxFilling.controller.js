@@ -133,8 +133,10 @@ export const reviewTaxFiling = async (req, res) => {
     await Notification.create({
       recipient: userId,
       recipientModel: "taxpayer",
-      type: "success",
-      message: `Your tax filling is approved, you can now pay your tax`,
+      type: `${decision === "approved" ? "success" : "info"}`,
+      message: `Your tax filling is ${decision}, ${
+        decision === "approved" ? "you can now pay your tax" : "Fill in again"
+      }`,
       link: "/user/paytax",
     })
 
@@ -156,21 +158,22 @@ export const getAllAssignedTaxpayerFilings = async (req, res) => {
   try {
     const officialId = req.userId
 
-    const official = await User.findById(officialId).select(
-      "role assignedTaxpayers"
-    )
-
-    if (official.role !== "official") {
+    const official = await User.findById(officialId).select("role")
+    if (!official || official.role !== "official") {
       return res.status(403).json({
         success: false,
         message: "Access denied. Only officials can access taxpayer filings.",
       })
     }
 
-    // Get the list of taxpayer IDs assigned to this official
-    const assignedTaxpayers = official.assignedTaxpayers
+    // Get taxpayers assigned to this official
+    const assignedTaxpayers = await User.find({
+      assignedOfficial: officialId,
+    }).select("_id")
 
-    if (assignedTaxpayers.length === 0) {
+    const taxpayerIds = assignedTaxpayers.map((tp) => tp._id)
+
+    if (taxpayerIds.length === 0) {
       return res.status(200).json({
         success: true,
         message: "No taxpayers assigned to this official.",
@@ -178,22 +181,35 @@ export const getAllAssignedTaxpayerFilings = async (req, res) => {
       })
     }
 
-    const filings = await TaxFiling.find({
-      taxpayer: { $in: assignedTaxpayers },
-    })
-      .sort({ createdAt: -1 }) // Optional: Sort by latest filing first
-      .populate("taxpayer", "name email _id") // Populate name, email, and ID of the taxpayer
+    const filings = await TaxFiling.find({ taxpayer: { $in: taxpayerIds } })
+      .sort({ createdAt: -1 })
+      .populate("taxpayer", "fullName taxId _id")
 
-    return res.status(200).json({
+    const formattedFilings = filings.map((filing, index) => ({
+      id: filing._id,
+      taxpayer: filing.taxpayer?.fullName || "N/A",
+      tin: filing.taxpayer?.taxId || "N/A",
+      taxType: filing.taxCategory?.toUpperCase() || "N/A",
+      period: filing.filingPeriod,
+      amount: `${filing.totalAmount?.toLocaleString()} ETB`,
+      status: filing.status,
+      submittedOn: new Date(filing.filingDate).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+      taxpayerId: filing.taxpayer._id,
+    }))
+
+    res.status(200).json({
       success: true,
-      message: filings.length
-        ? "Tax filings retrieved successfully."
-        : "No tax filings found for assigned taxpayers.",
-      count: filings.length,
-      filings,
+      message: "Tax filings retrieved successfully.",
+      count: formattedFilings.length,
+      filings: formattedFilings,
     })
   } catch (error) {
-    return res.status(500).json({
+    console.error("Error fetching tax filings:", error)
+    res.status(500).json({
       success: false,
       message: "Failed to fetch tax filings for the assigned taxpayers.",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
