@@ -50,6 +50,7 @@ export const logoutUser = async () => {
   try {
     const res = await axios.post(
       `${import.meta.env.VITE_BASE_URL}/api/user/logout`,
+      {},
       {
         withCredentials: true,
       }
@@ -61,6 +62,7 @@ export const logoutUser = async () => {
       return { error: res.data.message || "Logout failed" }
     }
   } catch (error) {
+    console.log(error)
     return { error: error.response?.data || "Something went wrong" }
   }
 }
@@ -82,6 +84,43 @@ export const getUserById = async () => {
     }
   } catch (error) {
     return { error: error.response?.data || "Something went wrong" }
+  }
+}
+
+export const resetPassword = async ({ email, phoneNumber, newPassword }) => {
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_BASE_URL}/api/user/reset-password`,
+      {
+        email,
+        phoneNumber,
+        newPassword,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true, // Optional: use this if you're setting cookies
+      }
+    )
+
+    if (response.data.success) {
+      return {
+        success: true,
+        message: response.data.message || "Password reset successful",
+      }
+    } else {
+      return {
+        success: false,
+        message: response.data.message || "Failed to reset password",
+      }
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error.response?.data?.message || "Something went wrong. Try again.",
+    }
   }
 }
 

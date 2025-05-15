@@ -521,7 +521,7 @@ export const getRecentActivityFeed = async (req, res) => {
 
     const filedActivities = recentFilings.map((filing) => ({
       type: "filed",
-      name: filing.taxpayer.businessName || filing.taxpayer.fullName,
+      name: filing.taxpayer?.fullName || "-",
       amount: null,
     }))
 
@@ -550,8 +550,8 @@ export const getRecentActivityFeed = async (req, res) => {
 
     const paidActivities = recentPayments.map((payment) => ({
       type: "paid",
-      name: payment.taxpayer.fullName,
-      amount: payment.amount,
+      name: payment.taxpayer?.fullName || " -",
+      amount: payment?.amount || " -",
     }))
 
     const merged = [

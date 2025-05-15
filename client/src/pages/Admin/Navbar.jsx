@@ -49,7 +49,7 @@ export default function Navbar({ onBarClicked }) {
   }
 
   useEffect(() => {
-    unreadMsgLength.current = items.filter((n) => !n.read).length
+    unreadMsgLength.current = items?.filter((n) => !n.read).length
   }, [items])
 
   // Close dropdown when clicking outside

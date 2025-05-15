@@ -1,5 +1,6 @@
-import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
 import {
   FiDollarSign,
   FiCalendar,
@@ -26,6 +27,8 @@ import {
   ResponsiveContainer,
 } from "recharts"
 import toast, { Toaster } from "react-hot-toast"
+import { Spinner } from "@radix-ui/themes"
+import OfficialDashboardData from "@/context/OfficialDashboardData"
 
 const COLORS = {
   green: {
@@ -43,60 +46,7 @@ const COLORS = {
 }
 
 const OfficialReport = () => {
-  // Sample data
-  const paymentData = [
-    { month: "Jan", amount: 12000 },
-    { month: "Feb", amount: 15500 },
-    { month: "Mar", amount: 18200 },
-    { month: "Apr", amount: 21000 },
-    { month: "May", amount: 19500 },
-    { month: "Jun", amount: 22500 },
-  ]
-
-  const taxDistribution = [
-    { name: "VAT", value: 45 },
-    { name: "Income Tax", value: 30 },
-    { name: "Business Tax", value: 15 },
-    { name: "Property Tax", value: 10 },
-  ]
-
-  const topTaxpayers = [
-    {
-      id: "TX-102",
-      name: "John Doe",
-      totalPaid: 50000,
-      lastPayment: "2025-04-10",
-      status: "Compliant",
-    },
-    {
-      id: "TX-107",
-      name: "Jane Smith",
-      totalPaid: 42000,
-      lastPayment: "2025-04-05",
-      status: "Compliant",
-    },
-    {
-      id: "TX-115",
-      name: "Acme Corp",
-      totalPaid: 38000,
-      lastPayment: "2025-03-28",
-      status: "Pending",
-    },
-    {
-      id: "TX-121",
-      name: "Global Ltd",
-      totalPaid: 32500,
-      lastPayment: "2025-04-12",
-      status: "Compliant",
-    },
-    {
-      id: "TX-129",
-      name: "Tech Solutions",
-      totalPaid: 28500,
-      lastPayment: "2025-03-15",
-      status: "Overdue",
-    },
-  ]
+  const { data, isLoading } = OfficialDashboardData()
 
   const complianceData = [
     { name: "On Time", value: 78 },
@@ -105,8 +55,55 @@ const OfficialReport = () => {
   ]
 
   const handleExport = (type) => {
-    toast.success(`Exporting as ${type}...`)
+    switch (type) {
+      case "PDF":
+        exportAsPDF()
+        break
+      case "CSV":
+        exportAsCSV()
+        break
+      case "Email":
+        // emailReport()
+        break
+      default:
+        console.warn("Unsupported export type:", type)
+    }
   }
+  const exportAsPDF = () => {
+    console.log("pdf")
+    const doc = new jsPDF()
+    doc.text("Tax Dashboard Report", 14, 20)
+
+    // Dummy data – replace with your actual report
+    const tableColumn = ["Name", "Total Paid", "Status"]
+    const tableRows = data.paymentData
+
+    autoTable(doc, {
+      startY: 30,
+      head: tableColumn,
+      body: tableRows,
+    })
+
+    doc.save("report.pdf")
+  }
+
+  const exportAsCSV = () => {
+    const headers = ["Name", "Total Paid", "Status"]
+    const rows = data.paymentData
+
+    const csvContent = [headers, ...rows].map((row) => row.join(",")).join("\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.setAttribute("href", url)
+    link.setAttribute("download", "report.csv")
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  if (isLoading) return <Spinner />
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -125,32 +122,26 @@ const OfficialReport = () => {
           {
             icon: <FiDollarSign />,
             title: "Total Tax Collected",
-            value: "$128,700",
+            value: data.totalTaxCollected,
             color: "emerald",
           },
           {
             icon: <FiCalendar />,
             title: "Upcoming Payments",
-            value: "24",
+            value: data.upcomingPayments,
             color: "teal",
           },
           {
             icon: <FiAlertCircle />,
             title: "Overdue Payments",
-            value: "8",
+            value: data.overduePayments,
             color: "amber",
           },
           {
             icon: <FiUsers />,
-            title: "Active Taxpayers",
-            value: "142",
+            title: "Assigned active Taxpayers",
+            value: data.activeTaxpayers,
             color: "blue",
-          },
-          {
-            icon: <FiSlash />,
-            title: "Non-Compliant",
-            value: "12",
-            color: "red",
           },
         ].map((widget, index) => (
           <motion.div
@@ -193,7 +184,7 @@ const OfficialReport = () => {
           </h2>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={paymentData}>
+              <LineChart data={data.paymentData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="month" stroke="#6b7280" />
                 <YAxis stroke="#6b7280" />
@@ -229,7 +220,7 @@ const OfficialReport = () => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={taxDistribution}
+                  data={data?.taxDistribution}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -240,7 +231,7 @@ const OfficialReport = () => {
                     `${name} ${(percent * 100).toFixed(0)}%`
                   }
                 >
-                  {taxDistribution.map((entry, index) => (
+                  {data?.taxDistribution.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={
@@ -293,38 +284,44 @@ const OfficialReport = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {topTaxpayers.map((taxpayer, index) => (
-                  <motion.tr
-                    key={taxpayer.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 * index }}
-                    className="hover:bg-gray-50"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {taxpayer.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {taxpayer.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ${taxpayer.totalPaid.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          taxpayer.status === "Compliant"
-                            ? "bg-green-100 text-green-800"
-                            : taxpayer.status === "Pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {taxpayer.status}
-                      </span>
-                    </td>
-                  </motion.tr>
-                ))}
+                {data.topTaxpayers && data.topTaxpayers > 0 ? (
+                  data.topTaxpayers.map((taxpayer, index) => (
+                    <motion.tr
+                      key={taxpayer.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 * index }}
+                      className="hover:bg-gray-50"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {taxpayer.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {taxpayer.id}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${taxpayer.totalPaid.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            taxpayer.status === "Compliant"
+                              ? "bg-green-100 text-green-800"
+                              : taxpayer.status === "Pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {taxpayer.status}
+                        </span>
+                      </td>
+                    </motion.tr>
+                  ))
+                ) : (
+                  <p className="text-[14px] text-center py-4">
+                    There is no taxpayers that hs paid until now
+                  </p>
+                )}
               </tbody>
             </table>
           </div>

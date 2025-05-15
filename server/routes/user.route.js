@@ -16,6 +16,7 @@ import {
   login,
   logoutUser,
   register,
+  resetPasswordWithEmailAndPhone,
   updateUserById,
 } from "../controller/user.controller.js"
 
@@ -59,4 +60,6 @@ router.patch("/role/:id", isAuthenticated, changeUserRole)
 //complete tax setup
 router.post("/tax-setup", isAuthenticated, completeTaxSetup)
 
+//reset
+router.post("/reset-password", resetPasswordWithEmailAndPhone)
 export default router

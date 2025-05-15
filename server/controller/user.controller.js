@@ -15,6 +15,8 @@ import Notification from "../models/Notification.js"
 import mongoose from "mongoose"
 import Payment from "../models/TaxPayment.js"
 import TaxFilling from "../models/TaxFilling.js"
+import TaxSchedule from "../models/TaxSchedule.js"
+
 dotenv.config()
 
 const createToken = (user) => {
@@ -74,7 +76,7 @@ export const register = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      maxAge: 24 * 60 * 60 * 1000,
     })
 
     res.status(200).json({
@@ -174,7 +176,6 @@ export const deleteTaxpayer = async (req, res) => {
 
     if (!deleteUser) return res.status(404).json({ message: "User not found" })
 
-    res.clearCookie("authToken")
     res
       .status(200)
       .json({ message: "User deleted successfully", success: true })
@@ -303,7 +304,9 @@ export const logoutUser = (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
     })
+
     return res.status(200).json({
       success: true,
       message: "Logged out successfully",
@@ -331,6 +334,16 @@ export const changeUserRole = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ message: "User not found." })
+    }
+
+    if (user.role !== newRole) {
+      await TaxFilling.deleteMany({ user: id })
+      await Payment.deleteMany({ user: id })
+      await TaxSchedule.deleteMany({ taxpayer: id })
+
+      user.assignedOfficial = undefined
+
+      await Notification.deleteMany({ recipient: id })
     }
 
     user.role = newRole
@@ -682,6 +695,7 @@ export const increaseNoticesSent = async (req, res) => {
 export const getOfficialDashboardStats = async (req, res) => {
   try {
     const officialId = req.userId
+
     // 1. All taxpayers assigned to this official
     const taxpayers = await User.find({
       assignedOfficial: officialId,
@@ -690,17 +704,17 @@ export const getOfficialDashboardStats = async (req, res) => {
 
     const taxpayerIds = taxpayers.map((tp) => tp._id)
 
-    // 2. Total tax collected (only paid or partially paid)
+    // 2. Total tax collected
     const payments = await Payment.aggregate([
       {
         $match: {
-          taxpayer: { $in: taxpayerIds }, // Filters payments by taxpayer IDs
+          taxpayer: { $in: taxpayerIds },
         },
       },
       {
         $group: {
-          _id: null, // Grouping everything together (no grouping by specific field)
-          totalCollected: { $sum: "$amount" }, // Sum the amount field to get total collected payments
+          _id: null,
+          totalCollected: { $sum: "$amount" },
         },
       },
     ])
@@ -723,9 +737,117 @@ export const getOfficialDashboardStats = async (req, res) => {
       status: "Overdue",
     })
 
-    // 6. Total number of payments made
+    // 6. Upcoming payments
+    const today = new Date()
+    const upcomingPaymentsCount = await Payment.countDocuments({
+      taxpayer: { $in: taxpayerIds },
+      status: { $in: ["Unpaid", "Pending"] },
+      dueDate: { $gt: today },
+    })
+
+    // 7. Total payments made
     const totalPaymentsCount = await Payment.countDocuments({
       taxpayer: { $in: taxpayerIds },
+    })
+
+    // 8. Tax distribution (based on taxpayer taxCategory)
+    const taxFilings = await TaxFilling.find({
+      taxpayer: { $in: taxpayerIds },
+    })
+
+    const taxCategoryCounts = {}
+    for (const filing of taxFilings) {
+      const category = filing.taxCategory || "Unknown"
+      taxCategoryCounts[category] = (taxCategoryCounts[category] || 0) + 1
+    }
+
+    const taxDistribution = Object.entries(taxCategoryCounts).map(
+      ([name, value]) => ({ name, value })
+    )
+    // 9. Top 5 taxpayers by total paid amount
+    const topTaxpayersAgg = await Payment.aggregate([
+      {
+        $match: {
+          taxpayer: { $in: taxpayerIds },
+          status: { $in: ["Paid", "Partially Paid"] },
+        },
+      },
+      {
+        $group: {
+          _id: "$taxpayer",
+          totalPaid: { $sum: "$amount" },
+          lastPaymentDate: { $max: "$createdAt" },
+        },
+      },
+      {
+        $sort: { totalPaid: -1 },
+      },
+      { $limit: 5 },
+    ])
+
+    // Fetch user details and payment status for each
+    const topTaxpayers = await Promise.all(
+      topTaxpayersAgg.map(async (entry) => {
+        const user = await User.findById(entry._id)
+        const lastPayment = await Payment.findOne({
+          taxpayer: entry._id,
+        })
+          .sort({ createdAt: -1 })
+          .select("status")
+
+        return {
+          id: user.customId || user._id.toString(), // fallback to Mongo ID
+          name: user.name,
+          totalPaid: entry.totalPaid,
+          lastPayment: entry.lastPaymentDate.toISOString().split("T")[0],
+          status: lastPayment?.status || "Pending",
+        }
+      })
+    )
+
+    // 10. Monthly payment data (last 6 months)
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1)
+
+    const monthlyPayments = await Payment.aggregate([
+      {
+        $match: {
+          taxpayer: { $in: taxpayerIds },
+          createdAt: { $gte: startOfYear },
+          status: { $in: ["Paid", "Partially Paid"] },
+        },
+      },
+      {
+        $group: {
+          _id: { $month: "$createdAt" },
+          amount: { $sum: "$amount" },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ])
+
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ]
+
+    const paymentData = monthNames.map((month, index) => {
+      const monthEntry = monthlyPayments.find((m) => m._id === index + 1)
+      return {
+        month,
+        amount: monthEntry ? monthEntry.amount : 0,
+      }
     })
 
     res.status(200).json({
@@ -736,7 +858,11 @@ export const getOfficialDashboardStats = async (req, res) => {
         activeTaxpayers: taxpayers.length,
         pendingTaxFilings: pendingFilingsCount,
         overduePayments: overduePaymentsCount,
+        upcomingPayments: upcomingPaymentsCount,
         totalPaymentsMade: totalPaymentsCount,
+        taxDistribution,
+        topTaxpayers,
+        paymentData,
       },
     })
   } catch (error) {
@@ -744,6 +870,48 @@ export const getOfficialDashboardStats = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to load dashboard stats",
+    })
+  }
+}
+
+export const resetPasswordWithEmailAndPhone = async (req, res) => {
+  const { email, phoneNumber, newPassword } = req.body
+
+  if (!email || !phoneNumber || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Email, phone number, and new password are required.",
+    })
+  }
+
+  try {
+    // 1. Find the user by email and phone number
+    const user = await User.findOne({ email })
+
+    console.log(email, phoneNumber)
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "No user found with the provided email and phone number.",
+      })
+    }
+
+    // 2. Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+    // 3. Update the password
+    user.password = hashedPassword
+    await user.save()
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successfully.",
+    })
+  } catch (error) {
+    console.error("Password reset error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Server error. Please try again later.",
     })
   }
 }

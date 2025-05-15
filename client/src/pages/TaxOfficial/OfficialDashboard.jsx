@@ -42,6 +42,7 @@ import {
 } from "@/services/Tax"
 import Spinner from "@/ui/Spinner"
 import SpinnerMini from "@/ui/SpinnerMini"
+import OfficialDashboardData from "@/context/OfficialDashboardData"
 
 const complianceData = [
   { name: "On Time", value: 65 },
@@ -100,10 +101,7 @@ const QuickActionButton = ({ icon, label }) => (
 )
 
 export default function OfficialDashboard() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["dashboard-data"],
-    queryFn: fetchOfficialDashboardStats,
-  })
+  const { data, isLoading } = OfficialDashboardData()
   const { data: timeLineData, isLoading: isTimeLineLoading } = useQuery({
     queryKey: ["dashboard-data-two"],
     queryFn: getTaxTimeLine,
@@ -296,7 +294,7 @@ export default function OfficialDashboard() {
             {isFeedLoading ? (
               <SpinnerMini />
             ) : (
-              activityData.map((item, index) => (
+              activityData?.map((item, index) => (
                 <ActivityItem
                   key={index}
                   type={item.type}

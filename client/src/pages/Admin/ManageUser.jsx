@@ -8,7 +8,7 @@ export default function ManageUser() {
   }, [])
 
   return (
-    <div className="bg-gray-200 min-h-screen">
+    <div className="bg-white min-h-screen">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}

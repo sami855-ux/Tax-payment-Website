@@ -37,7 +37,7 @@ export default function Dashboard() {
   }, [dispatch])
 
   return (
-    <div className="w-screen md:w-full p-4 bg-gray-300 min-h-screen">
+    <div className="w-screen md:w-full p-4 bg-white min-h-screen">
       <section className="w-full h-14 flex items-center justify-between pr-5 py-3">
         <h2 className="font-semibold text-xl text-gray-800">Dashboard</h2>
       </section>
