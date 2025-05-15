@@ -1,5 +1,6 @@
 import express from "express"
 import {
+  approvePayment,
   createPayment,
   getAllPaymentsForUser,
   getPaymentsForOfficial,
@@ -22,5 +23,7 @@ router.get("/getall", isAuthenticated, getAllPaymentsForUser)
 
 //Get payments for the user
 router.get("/getassigned-payment", isAuthenticated, getPaymentsForOfficial)
+
+router.put("/approve/:paymentId", isAuthenticated, approvePayment)
 
 export default router

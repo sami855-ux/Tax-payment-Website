@@ -12,16 +12,20 @@ import {
   FiCamera,
 } from "react-icons/fi"
 import toast from "react-hot-toast"
+import { useDispatch, useSelector } from "react-redux"
+import { getUserById, updateUserById } from "@/services/apiUser"
+import { login } from "@/redux/slice/userSlice"
+import { Loader } from "lucide-react"
 
 const OfficialSettings = () => {
+  const { user } = useSelector((store) => store.user)
   const [activeTab, setActiveTab] = useState("profile")
   const [profileData, setProfileData] = useState({
-    name: "John TaxOfficer",
-    email: "john.tax@government.gov",
-    phone: "+1 234 567 8900",
-    role: "Senior Tax Auditor",
-    department: "Income Tax Department",
-    officeLocation: "Central Tax Building, Floor 5",
+    name: user.fullName,
+    email: user.email,
+    phone: user.phoneNumber,
+    role: user.role,
+    officeLocation: user.wereda,
   })
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -35,11 +39,11 @@ const OfficialSettings = () => {
     overdueTaxpayer: true,
     systemUpdates: false,
   })
-  const [profileImage, setProfileImage] = useState(null)
-  const [previewImage, setPreviewImage] = useState(
-    "https://randomuser.me/api/portraits/men/32.jpg"
-  )
+  const [profileImage, setProfileImage] = useState(user?.profilePicture)
+  const [previewImage, setPreviewImage] = useState(user?.profilePicture)
   const [activityLog, setActivityLog] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const dispatch = useDispatch()
 
   // Load sample activity log
   useEffect(() => {
@@ -75,8 +79,8 @@ const OfficialSettings = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0]
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("Image size should be less than 2MB")
+      if (file.size > 7 * 1024 * 1024) {
+        toast.error("Image size should be less than 7MB")
         return
       }
       setProfileImage(file)
@@ -86,24 +90,86 @@ const OfficialSettings = () => {
   }
 
   // Handle profile update
-  const handleProfileUpdate = (e) => {
+  const handleProfileUpdate = async (e) => {
     e.preventDefault()
-    toast.success("Profile updated successfully!")
+
+    if (
+      !profileData.name ||
+      !profileData.email ||
+      !profileData.phone ||
+      !profileData.officeLocation ||
+      !profileImage
+    ) {
+      toast.error("Fill all forms")
+      return
+    }
+    const formData = new FormData()
+
+    formData.append("fullName", profileData.name)
+    formData.append("email", profileData.email)
+    formData.append("phoneNumber", profileData.phone)
+    formData.append("wereda", profileData.officeLocation)
+    formData.append("profilePicture", profileImage)
+
+    try {
+      setIsLoading(true)
+      const response = await updateUserById(formData)
+
+      if (response.success) {
+        toast.success("Profile updated successfully")
+
+        const res = await getUserById()
+        if (res.success) {
+          dispatch(
+            login({
+              user: res.user,
+            })
+          )
+          if (res.user.profilePicture) {
+            setPreviewImage(res.user.profilePicture)
+          }
+        }
+      } else {
+        toast.error(response.error?.message || "Failed to update profile")
+      }
+    } catch (error) {
+      toast.error("An error occurred while updating profile")
+      console.error("Update error:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Handle password change
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = async (e) => {
     e.preventDefault()
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error("Passwords do not match!")
       return
     }
-    toast.success("Password changed successfully!")
-    setPasswordData({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    })
+
+    console.log("updating")
+    try {
+      setIsLoading(true)
+      const response = await updateUserById({
+        password: passwordData.newPassword,
+      })
+      if (response.success) {
+        toast.success("Password updated successfully")
+        setPasswordData({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        })
+      } else {
+        toast.error("Failed to update password")
+      }
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Handle notification toggle
@@ -175,17 +241,6 @@ const OfficialSettings = () => {
               >
                 <FiBell className="mr-3" />
                 Notifications
-              </button>
-              <button
-                onClick={() => setActiveTab("activity")}
-                className={`flex items-center w-full px-4 py-3 rounded-lg transition-all ${
-                  activeTab === "activity"
-                    ? "bg-emerald-50 text-emerald-600"
-                    : "hover:bg-gray-100 text-gray-700"
-                }`}
-              >
-                <FiActivity className="mr-3" />
-                Activity Log
               </button>
             </nav>
           </motion.div>
@@ -308,29 +363,14 @@ const OfficialSettings = () => {
                         <input
                           type="text"
                           value={profileData.role}
+                          disabled={true}
                           onChange={(e) =>
                             setProfileData({
                               ...profileData,
                               role: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Department
-                        </label>
-                        <input
-                          type="text"
-                          value={profileData.department}
-                          onChange={(e) =>
-                            setProfileData({
-                              ...profileData,
-                              department: e.target.value,
-                            })
-                          }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          className="w-full capitalize px-4 py-2 disabled:bg-gray-300 disabled:cursor-not-allowed border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                         />
                       </div>
                       <div>
@@ -355,8 +395,17 @@ const OfficialSettings = () => {
                         type="submit"
                         className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center"
                       >
-                        <FiCheck className="mr-2" />
-                        Save Profile
+                        {isLoading ? (
+                          <span className="flex items-center gap-2 cursor-not-allowed">
+                            <Loader className="animate-spin" />
+                            <span>Updating...</span>
+                          </span>
+                        ) : (
+                          <>
+                            <FiCheck className="mr-2" />
+                            <span>Save Profile</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </form>
@@ -379,23 +428,6 @@ const OfficialSettings = () => {
                   >
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Current Password
-                      </label>
-                      <input
-                        type="password"
-                        value={passwordData.currentPassword}
-                        onChange={(e) =>
-                          setPasswordData({
-                            ...passwordData,
-                            currentPassword: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         New Password
                       </label>
                       <input
@@ -409,7 +441,7 @@ const OfficialSettings = () => {
                         }
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                         required
-                        minLength="8"
+                        minLength="4"
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         Minimum 8 characters
@@ -437,8 +469,17 @@ const OfficialSettings = () => {
                         type="submit"
                         className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center"
                       >
-                        <FiCheck className="mr-2" />
-                        Change Password
+                        {isLoading ? (
+                          <span className="flex items-center gap-2 cursor-not-allowed">
+                            <Loader className="animate-spin" />
+                            <span>Updating...</span>
+                          </span>
+                        ) : (
+                          <>
+                            <FiCheck className="mr-2" />
+                            <span>Change password</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </form>

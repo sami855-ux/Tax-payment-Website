@@ -13,7 +13,8 @@ import {
 import { generateInitialSchedules } from "./TaxSchedule.controller.js"
 import Notification from "../models/Notification.js"
 import mongoose from "mongoose"
-
+import Payment from "../models/TaxPayment.js"
+import TaxFilling from "../models/TaxFilling.js"
 dotenv.config()
 
 const createToken = (user) => {
@@ -506,6 +507,13 @@ export const assignOfficialToTaxpayer = async (req, res) => {
         error: "Taxpayer not found.",
       })
     }
+    await Notification.create({
+      recipient: officialId,
+      recipientModel: "official",
+      type: "success",
+      message: `New taxpayer named ${existingTaxpayer.fullName} is assigned to you, check it out on the taxpayer route`,
+      link: "/official/taxpayer",
+    })
 
     res.status(200).json({
       success: true,
@@ -667,6 +675,75 @@ export const increaseNoticesSent = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error",
+    })
+  }
+}
+
+export const getOfficialDashboardStats = async (req, res) => {
+  try {
+    const officialId = req.userId
+    // 1. All taxpayers assigned to this official
+    const taxpayers = await User.find({
+      assignedOfficial: officialId,
+      role: "taxpayer",
+    })
+
+    const taxpayerIds = taxpayers.map((tp) => tp._id)
+
+    // 2. Total tax collected (only paid or partially paid)
+    const payments = await Payment.aggregate([
+      {
+        $match: {
+          taxpayer: { $in: taxpayerIds }, // Filters payments by taxpayer IDs
+        },
+      },
+      {
+        $group: {
+          _id: null, // Grouping everything together (no grouping by specific field)
+          totalCollected: { $sum: "$amount" }, // Sum the amount field to get total collected payments
+        },
+      },
+    ])
+
+    // 3. Total notices sent
+    const totalNoticesSent = taxpayers.reduce(
+      (acc, user) => acc + (user.noticesSent || 0),
+      0
+    )
+
+    // 4. Pending tax filings
+    const pendingFilingsCount = await TaxFilling.countDocuments({
+      taxpayer: { $in: taxpayerIds },
+      status: "submitted",
+    })
+
+    // 5. Overdue payments
+    const overduePaymentsCount = await Payment.countDocuments({
+      taxpayer: { $in: taxpayerIds },
+      status: "Overdue",
+    })
+
+    // 6. Total number of payments made
+    const totalPaymentsCount = await Payment.countDocuments({
+      taxpayer: { $in: taxpayerIds },
+    })
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalTaxCollected: payments[0]?.totalCollected || 0,
+        totalNoticesSent,
+        activeTaxpayers: taxpayers.length,
+        pendingTaxFilings: pendingFilingsCount,
+        overduePayments: overduePaymentsCount,
+        totalPaymentsMade: totalPaymentsCount,
+      },
+    })
+  } catch (error) {
+    console.error("Error getting official dashboard stats:", error)
+    res.status(500).json({
+      success: false,
+      message: "Failed to load dashboard stats",
     })
   }
 }

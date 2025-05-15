@@ -169,14 +169,16 @@ export default function UserDashboard() {
                         </span>
                         <span className="text-blue-600 mx-1">tax due on</span>
                         <span className="font-medium text-blue-800">
-                          {new Date(data.filingDate).toLocaleDateString(
-                            "en-US",
-                            {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            }
-                          )}
+                          {data.dueDate
+                            ? new Date(data.dueDate).toLocaleDateString(
+                                "en-US",
+                                {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                }
+                              )
+                            : null}
                         </span>
                       </span>
                     </div>

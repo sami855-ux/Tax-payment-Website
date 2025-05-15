@@ -215,7 +215,7 @@ export const reviewTaxFiling = async (formData) => {
     console.log(error)
     if (error.response) {
       throw new Error(
-        error.response.data.error || "Failed to review the filling."
+        error.response.data.message || "Failed to review the filling."
       )
     } else {
       throw new Error("Network error or server not reachable.")
@@ -233,6 +233,7 @@ export const getApprovedTaxFilingsForUser = async () => {
     if (response.data.success) {
       return response.data
     } else {
+      console.log(response)
       return { error: response.data.message || "Failed" }
     }
   } catch (error) {
@@ -247,12 +248,18 @@ export const getApprovedTaxFilingsForUser = async () => {
   }
 }
 
-export const createPayment = async (paymentData) => {
+export const createPayment = async (formData) => {
+  for (const pair of formData.entries()) {
+    console.log(pair[0], pair[1])
+  }
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_BASE_URL}/api/payment/create`,
-      paymentData,
+      formData,
       {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
         withCredentials: true,
       }
     )
@@ -331,5 +338,87 @@ export const getPaymentsForOfficial = async () => {
   } catch (error) {
     console.error("Error fetching user payments:", error)
     throw error.response?.data || { message: "Failed to fetch payments." }
+  }
+}
+
+export const approvePayment = async (obj) => {
+  const status = obj.status
+  try {
+    const response = await axios.put(
+      `${import.meta.env.VITE_BASE_URL}/api/payment/approve/${obj.paymentId}`,
+      { status },
+      {
+        withCredentials: true,
+      }
+    )
+
+    if (response.data.success) {
+      console.log("Payment approved:", response.data.payment)
+      return response.data
+    } else {
+      console.error("Approval failed:", response.data.message)
+      return { error: response.data.message }
+    }
+  } catch (error) {
+    console.error(
+      "Axios error approving payment:",
+      error.response?.data || error
+    )
+    return { error: "Something went wrong while approving payment" }
+  }
+}
+
+export const fetchOfficialDashboardStats = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/api/user/dashboard`,
+      {
+        withCredentials: true,
+      }
+    )
+
+    return response.data.data
+  } catch (error) {
+    console.error(
+      "Error fetching dashboard stats:",
+      error.response?.data || error
+    )
+    throw error
+  }
+}
+export const getTaxTimeLine = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/api/filling/timeline`,
+      {
+        withCredentials: true,
+      }
+    )
+
+    return response.data.timelineData
+  } catch (error) {
+    console.error(
+      "Error fetching dashboard stats:",
+      error.response?.data || error
+    )
+    throw error
+  }
+}
+export const getRecentActivityFeed = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/api/filling/dashboard/activity-feed`,
+      {
+        withCredentials: true,
+      }
+    )
+
+    return response.data.activityData
+  } catch (error) {
+    console.error(
+      "Error fetching dashboard stats:",
+      error.response?.data || error
+    )
+    throw error
   }
 }

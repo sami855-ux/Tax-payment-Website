@@ -68,7 +68,7 @@ const PaymentTable = ({ data, onVerify, onView, onSendReminder }) => {
         Cell: ({ value }) => (
           <span
             className={`px-2 py-1 rounded-full text-xs font-semibold ${
-              value === "Verified"
+              value === "Paid"
                 ? "bg-green-100 text-green-800"
                 : value === "Pending"
                 ? "bg-yellow-100 text-yellow-800"
@@ -87,7 +87,10 @@ const PaymentTable = ({ data, onVerify, onView, onSendReminder }) => {
         Cell: ({ row }) => (
           <div className="flex space-x-2">
             <button
-              onClick={() => onView(row.original)}
+              onClick={() => {
+                console.log(row.original.status)
+                onView(row.original)
+              }}
               className="p-1 text-blue-500 hover:text-blue-700"
               title="View Details"
             >
@@ -96,14 +99,14 @@ const PaymentTable = ({ data, onVerify, onView, onSendReminder }) => {
             {row.original.status === "Pending" && (
               <>
                 <button
-                  onClick={() => onVerify(row.original.paymentId, true)}
+                  onClick={() => onVerify(row.original.id, true)}
                   className="p-1 text-green-500 hover:text-green-700"
                   title="Approve"
                 >
                   <FiCheck size={16} />
                 </button>
                 <button
-                  onClick={() => onVerify(row.original.paymentId, false)}
+                  onClick={() => onVerify(row.original.id, false)}
                   className="p-1 text-red-500 hover:text-red-700"
                   title="Reject"
                 >
@@ -111,13 +114,6 @@ const PaymentTable = ({ data, onVerify, onView, onSendReminder }) => {
                 </button>
               </>
             )}
-            <button
-              onClick={() => onSendReminder(row.original.taxpayerId)}
-              className="p-1 text-purple-500 hover:text-purple-700"
-              title="Send Reminder"
-            >
-              <FiSend size={16} />
-            </button>
           </div>
         ),
         disableSortBy: true,

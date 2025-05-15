@@ -9,133 +9,186 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 
 export default function Footer() {
+  const footerLinks = [
+    {
+      header: "Useful links",
+      links: [
+        "Privacy Policy",
+        "Our Service",
+        "About Website",
+        "Forums",
+        "Categories",
+        "Latest Products",
+        "Testimonials",
+      ],
+    },
+    {
+      header: "Quick access",
+      links: [
+        "MarketPlaces",
+        "Licensees",
+        "Review",
+        "Refund",
+        "Contact us",
+        "Support Policy",
+      ],
+    },
+    {
+      header: "More links",
+      links: [
+        "About us",
+        "Our projects",
+        "Our office",
+        "Our location",
+        "Who we are?",
+      ],
+    },
+  ]
+
   return (
-    <div
-      className="w-full min-h-[45vh] bg-[#064995] text-white flex justify-center items-center flex-col gap-3"
+    <footer
+      className="w-full bg-gradient-to-b from-[#064995] to-[#04356e] text-white"
       id="contact"
     >
-      <section className="w-full md:w-[87%] min-h-72 md:pt-16 flex flex-col md:flex-row gap-7 justify-center items-center mt-32 md:mt-0 ">
-        <div className="w-[420px] h-full">
-          <p className="text-[14px] text-gray-200">
-            Get an accurate estimate of your taxes before filing. Our advanced
-            tax calculator helps you understand your obligations and avoid
-            surprises.
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+          className="grid grid-cols-1 md:grid-cols-4 gap-10"
+        >
+          {/* Company Info */}
+          <div className="space-y-6">
+            <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 text-transparent bg-clip-text">
+              TaxEasy
+            </h3>
+            <p className="text-gray-300 text-sm leading-relaxed">
+              Get an accurate estimate of your taxes before filing. Our advanced
+              tax calculator helps you understand your obligations.
+            </p>
+
+            {/* Social Icons */}
+            <div className="flex space-x-4">
+              <SocialIcon
+                icon={<FaFacebookF />}
+                color="bg-blue-600 hover:bg-blue-700"
+              />
+              <SocialIcon
+                icon={<FaTwitter />}
+                color="bg-cyan-500 hover:bg-cyan-600"
+              />
+              <SocialIcon
+                icon={<FaInstagram />}
+                color="bg-pink-600 hover:bg-pink-700"
+              />
+              <SocialIcon
+                icon={<FaLinkedinIn />}
+                color="bg-blue-700 hover:bg-blue-800"
+              />
+            </div>
+          </div>
+
+          {/* Footer Links */}
+          {footerLinks.map((section, index) => (
+            <FooterSection
+              key={index}
+              header={section.header}
+              links={section.links}
+            />
+          ))}
+        </motion.div>
+
+        {/* Divider */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          transition={{ duration: 0.8 }}
+          className="border-t border-gray-700 mt-12"
+        />
+
+        {/* Copyright */}
+        <div className="flex flex-col md:flex-row justify-between items-center pt-8 pb-4">
+          <p className="text-gray-400 text-sm">
+            &copy; {new Date().getFullYear()} TaxEasy. All rights reserved.
           </p>
-
-          <section className="flex items-center w-full gap-3 h-28">
-            <Icon icon={<FaFacebookF color="white" />} href="#" />
-            <Icon icon={<FaTwitter color="white" />} href="#" />
-            <Icon icon={<FaInstagram color="white" />} href="#" />
-            <Icon icon={<FaLinkedinIn color="white" />} href="#" />
-          </section>
+          <div className="flex space-x-6 mt-4 md:mt-0">
+            <FooterLink text="Privacy policy" />
+            <FooterLink text="About us" />
+            <FooterLink text="Contact" />
+          </div>
         </div>
-        <div className="flex flex-col w-full min-h-full gap-3 pl-12 md:w-fit md:pl-0 md:flex-row">
-          <FooterSection
-            header=" Useful links"
-            textList={[
-              "Privacy Policy",
-              "Our Service",
-              "About Website",
-              "Forums",
-              "Categories",
-              "Latest Products",
-              "Testimonials",
-            ]}
-          />
-          <FooterSection
-            header="Quick access"
-            textList={[
-              "MarketPlaces",
-              "Licensees",
-              "Review",
-              "Refund",
-              "Contact us",
-              "Support Policy",
-            ]}
-          />
-          <FooterSection
-            header="More links"
-            textList={[
-              "About us",
-              "Our projects",
-              "Our office",
-              "Our location",
-              "Who we are?",
-            ]}
-          />
-        </div>
-      </section>
-      <div className="flex items-center justify-between w-full px-4 md:px-40 min-h-16 bg-[#064995]">
-        <p className="text-xs text-white"> &copy; All right are reserved</p>
-
-        <section className="flex gap-4 ">
-          <a href="#" className="text-xs text-white">
-            Privacy policy
-          </a>
-          <a href="#" className="text-xs text-white">
-            About us
-          </a>
-          <a href="#" className="text-xs text-white">
-            Contact
-          </a>
-        </section>
       </div>
+    </footer>
+  )
+}
+
+const SocialIcon = ({ icon, color }) => {
+  return (
+    <motion.a
+      href="#"
+      whileHover={{ y: -3 }}
+      className={`w-10 h-10 rounded-full ${color} text-white flex items-center justify-center transition-colors`}
+    >
+      {icon}
+    </motion.a>
+  )
+}
+
+const FooterSection = ({ header, links }) => {
+  return (
+    <div className="space-y-4">
+      <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-300">
+        {header}
+      </h4>
+      <ul className="space-y-3">
+        {links.map((link, index) => (
+          <FooterListItem key={index} text={link} />
+        ))}
+      </ul>
     </div>
   )
 }
 
-const Icon = ({ icon, href }) => {
+const FooterListItem = ({ text }) => {
+  const [isHovered, setIsHovered] = useState(false)
+
   return (
-    <a
-      href={href}
-      className="flex items-center justify-center rounded-full cursor-pointer w-9 h-9 bg-lightGreen"
+    <motion.li
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="flex items-center"
     >
-      {icon}
-    </a>
-  )
-}
-
-const FooterSection = ({ header, textList }) => {
-  return (
-    <section className="w-[200px]">
-      <h2 className="py-3 text-xs font-semibold text-gray-200 uppercase">
-        {header}
-      </h2>
-      <div className="relative w-[90%] h-5 flex justify-center items-center">
-        <span className="w-2 h-2 rounded-full bg-brown/50"></span>
-        <span className="w-full h-[1px] bg-brown/50"></span>
-      </div>
-      <div className="flex flex-col justify-center w-full gap-1">
-        {textList.map((list, listIndex) => (
-          <FooterList text={list} key={listIndex} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-const FooterList = ({ text }) => {
-  const [isHover, setIsHover] = useState(false)
-
-  return (
-    <motion.section
-      onMouseEnter={() => setIsHover(true)}
-      onMouseLeave={() => setIsHover(false)}
-      animate={{
-        x: isHover ? 5 : 0,
-      }}
-      className="flex items-center w-full h-5 gap-2 cursor-pointer"
-    >
-      <FaAngleRight color="#22c55e" size={15} />
-      <motion.span
+      <motion.div
         animate={{
-          fontWeight: isHover ? "bold" : "",
-          color: isHover ? "#22c55e" : "",
+          rotate: isHovered ? 90 : 0,
+          color: isHovered ? "#22d3ee" : "#9ca3af",
         }}
-        className="text-xs text-gray-200"
+        transition={{ duration: 0.2 }}
+      >
+        <FaAngleRight size={12} />
+      </motion.div>
+      <motion.a
+        href="#"
+        animate={{
+          x: isHovered ? 5 : 0,
+          color: isHovered ? "#22d3ee" : "#e5e7eb",
+        }}
+        className="ml-2 text-sm hover:underline"
       >
         {text}
-      </motion.span>
-    </motion.section>
+      </motion.a>
+    </motion.li>
+  )
+}
+
+const FooterLink = ({ text }) => {
+  return (
+    <motion.a
+      href="#"
+      whileHover={{ color: "#22d3ee" }}
+      className="text-gray-400 text-sm hover:underline transition-colors"
+    >
+      {text}
+    </motion.a>
   )
 }

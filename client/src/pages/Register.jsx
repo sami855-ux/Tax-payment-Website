@@ -9,19 +9,18 @@ import { FaAngleLeft } from "react-icons/fa"
 import {
   Home,
   Loader,
-  Loader2,
   LucideMail,
   Map,
   MapPin,
   Phone,
   ShieldCheck,
 } from "lucide-react"
-
-import { validateEmail, validatePhoneNumber } from "@/helpers/Validiation"
+import { validateEmail } from "@/helpers/Validiation"
 import { registerUser } from "@/services/apiUser"
 import register from "../assets/register.png"
 import toast from "react-hot-toast"
-import { HiIdentification, HiKey, HiLockClosed, HiUser } from "react-icons/hi"
+import { HiIdentification, HiLockClosed, HiUser } from "react-icons/hi"
+import { motion } from "framer-motion"
 
 export default function Register() {
   const navigate = useNavigate()
@@ -33,168 +32,203 @@ export default function Register() {
     navigate(-1)
   }
 
-  console.log(actionData)
-
   return (
-    <div className="w-full h-screen flex items-center justify-center">
-      <section className="w-1/2 h-full pt-5 pl-20">
-        <FaAngleLeft
-          size={20}
-          className="w-8 h-8 p-1 border border-gray-300 rounded-full mb-4 cursor-pointer"
-          onClick={handleBack}
-        />
-        <h2 className="font-bold text-3xl bg-gradient-to-r from-blue-500 to-[#065b8c] text-transparent bg-clip-text">
-          Create your account
-        </h2>
+    <div className="fixed inset-0 overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50">
+      <div className="flex flex-col lg:flex-row h-full w-full">
+        {/* Left Section - Form */}
+        <motion.section
+          initial={{ x: -50 }}
+          animate={{ x: 0 }}
+          className="w-full lg:w-1/2 p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 bg-white overflow-y-auto"
+          style={{ height: "100vh" }}
+        >
+          <div className="max-w-lg mx-auto h-full flex flex-col">
+            <div className="flex items-center mb-6">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleBack}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <FaAngleLeft size={20} className="text-gray-600" />
+              </motion.button>
+              <h2 className="font-bold text-2xl sm:text-3xl bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text ml-4">
+                Create your account
+              </h2>
+            </div>
 
-        {actionData?.status === "error" && (
-          <p className="text-white bg-red-300 py-4 my-1 rounded-md px-4">
-            {actionData?.data?.errors?.at(0)?.msg || actionData?.data?.message}
-          </p>
-        )}
+            {actionData?.status === "error" && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-white bg-red-400 py-3 my-2 rounded-lg px-4 shadow-md"
+              >
+                {actionData?.data?.errors?.at(0)?.msg ||
+                  actionData?.data?.message}
+              </motion.div>
+            )}
 
-        <Form method="POST">
-          <div className="w-full h-14 flex gap-4 items-center  my-4">
-            <FormCell
-              placeholder="Enter your full name"
-              name="Full Name"
-              type="text"
-              width="1/2"
-              icon={<HiUser size={20} className="text-gray-700" />}
-            />
-            <FormCell
-              placeholder="Enter your email"
-              name="Email"
-              type="email"
-              width="1/2"
-              icon={<LucideMail size={20} className="text-gray-700" />}
+            <Form method="POST" className="flex-1 flex flex-col">
+              <div className="space-y-4 flex-1 overflow-y-auto pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <FormInput
+                    placeholder="Full name"
+                    name="Full Name"
+                    type="text"
+                    icon={<HiUser size={18} className="text-gray-500" />}
+                    required
+                  />
+                  <FormInput
+                    placeholder="Email"
+                    name="Email"
+                    type="email"
+                    icon={<LucideMail size={18} className="text-gray-500" />}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="sex" className="text-gray-600 font-medium">
+                    Gender
+                  </label>
+                  <select
+                    id="sex"
+                    name="sex"
+                    className="w-full border border-gray-300 py-2 px-4 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+                    required
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <FormInput
+                  placeholder="Mobile phone"
+                  name="Mobile Phone"
+                  type="tel"
+                  icon={<Phone size={18} className="text-gray-500" />}
+                  required
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormInput
+                    placeholder="Woreda"
+                    name="Woreda"
+                    type="text"
+                    icon={<MapPin size={18} className="text-gray-500" />}
+                    required
+                  />
+                  <FormInput
+                    placeholder="Kebele"
+                    name="Kebele"
+                    type="text"
+                    icon={<Map size={18} className="text-gray-500" />}
+                    required
+                  />
+                </div>
+
+                <FormInput
+                  placeholder="Tax ID"
+                  name="Tax ID"
+                  type="text"
+                  icon={
+                    <HiIdentification size={18} className="text-gray-500" />
+                  }
+                  required
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormInput
+                    placeholder="Password"
+                    name="Password"
+                    type="password"
+                    icon={<HiLockClosed size={18} className="text-gray-500" />}
+                    required
+                  />
+                  <FormInput
+                    placeholder="Confirm password"
+                    name="Confirm password"
+                    type="password"
+                    icon={<ShieldCheck size={18} className="text-gray-500" />}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4 pb-2">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="reset"
+                  className="px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm sm:text-base"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-colors disabled:opacity-70 text-sm sm:text-base"
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader className="animate-spin" size={18} />
+                      Processing...
+                    </span>
+                  ) : (
+                    "Sign Up"
+                  )}
+                </motion.button>
+              </div>
+            </Form>
+          </div>
+        </motion.section>
+
+        {/* Right Section - Image (Hidden on mobile) */}
+        <section className="hidden lg:flex lg:w-1/2 h-full items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-100 p-8">
+          <div className="relative h-full w-full flex items-center justify-center">
+            <motion.img
+              src={register}
+              alt="Registration illustration"
+              className="max-h-full max-w-full object-contain rounded-lg"
+              initial={{ y: 0 }}
+              animate={{ y: [0, -10, 0] }}
+              transition={{
+                duration: 6,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
             />
           </div>
-          <div className="w-full h-14 flex flex-col my-">
-            <label htmlFor="sex" className="text-[15px]">
-              Sex
-            </label>
-            <select
-              id="sex"
-              name="sex"
-              className="border border-gray-300 py-2 px-3 rounded-md outline-none focus:border-blue-500 text-[15px]"
-            >
-              <option value="">Select</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div className="w-full h-14 flex gap-4 items-center   my-4">
-            <FormCell
-              placeholder="Enter mobile phone"
-              name="Mobile Phone"
-              type="tel"
-              width="1/2"
-              icon={<Phone size={20} className="text-gray-700" />}
-            />
-            <FormCell
-              placeholder="Enter your residency"
-              name="Residency Place"
-              type="text"
-              width="1/2"
-              icon={<Home size={20} className="text-gray-700" />}
-            />
-          </div>
-          <div className="w-full h-14 flex gap-4 items-center   my-4">
-            <FormCell
-              placeholder="Enter your woreda"
-              name="Woreda"
-              type="tel"
-              width="1/2"
-              icon={<MapPin size={20} className="text-gray-700" />}
-            />
-            <FormCell
-              placeholder="Enter your kebele"
-              name="Kebele"
-              type="text"
-              width="1/2"
-              icon={<Map size={20} className="text-gray-700" />}
-            />
-          </div>
-          <FormCell
-            placeholder="Enter your tax id"
-            name="Tax ID"
-            type="text"
-            width="full"
-            icon={<HiIdentification size={20} className="text-gray-700" />}
-          />
-          <div className="w-full h-14 flex gap-4 items-center   my-4">
-            <FormCell
-              placeholder="Enter your password"
-              name="Password"
-              type="password"
-              width="1/2"
-              icon={<HiLockClosed size={20} className="text-gray-700" />}
-            />
-            <FormCell
-              placeholder="Confirm your password"
-              name="Confirm password"
-              type="password"
-              width="1/2"
-              icon={<ShieldCheck size={20} className="text-gray-700" />}
-            />
-          </div>
-          <div className="w-full h-14 flex gap-4 items-center justify-between my-2">
-            <button
-              className="border border-gray-300 py-1 px-14 rounded-md cursor-pointer hover:bg-stone-200"
-              type="reset"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="border border-gray-300 py-2 text-[15px] hover:bg-blue-800 px-14 rounded-md cursor-pointer bg-blue-900 text-white"
-            >
-              {isSubmitting ? (
-                <span className="flex items-center gap-2">
-                  <Loader className="animate-spin" size={20} /> Loading...
-                </span>
-              ) : (
-                "Sign up"
-              )}
-            </button>
-          </div>
-        </Form>
-      </section>
-      <section className="w-1/2 h-full  flex items-center justify-center relative">
-        <img src={register} alt="" className="w-[80%] h-[95%] rounded-4xl" />
-      </section>
+        </section>
+      </div>
     </div>
   )
 }
-const FormCell = ({
-  name,
-  type,
-  width,
-  placeholder,
-  value,
-  method_red,
-  icon,
-}) => {
+
+const FormInput = ({ name, type, placeholder, icon, required }) => {
   return (
-    <div className={`w-${width} h-14 flex flex-col`}>
-      <label htmlFor={name} className="pb-1 text-gray-800 text-[15px]">
+    <motion.div whileFocus={{ y: -2 }} className="space-y-1">
+      <label htmlFor={name} className="text-gray-600 font-medium text-sm">
         {name}
       </label>
-      <section className="border border-gray-300 rounded-md flex items-center gap-2 px-2">
-        {icon || <HiUser size={20} />}
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          {icon}
+        </div>
         <input
-          value={value}
           type={type}
           name={name}
+          id={name}
           placeholder={placeholder}
-          onChange={method_red}
-          required
-          className=" text-[15px]  py-1 px-3 rounded-md outline-none bg-transparent"
+          required={required}
+          className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
         />
-      </section>
-    </div>
+      </div>
+    </motion.div>
   )
 }
 
@@ -228,7 +262,6 @@ export async function action({ request }) {
     !correctedData.taxId ||
     !correctedData.password ||
     !correctedData.email ||
-    !correctedData.residentialAddress ||
     !correctedData.kebele ||
     !correctedData.wereda
   ) {

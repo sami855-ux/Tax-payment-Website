@@ -88,9 +88,6 @@ export const getUserById = async () => {
 export const updateUserById = async (formData) => {
   const userId = localStorage.getItem("userId")
 
-  for (const pair of formData.entries()) {
-    console.log(pair[0], pair[1])
-  }
   try {
     const res = await axios.patch(
       `${import.meta.env.VITE_BASE_URL}/api/user/${userId}`,

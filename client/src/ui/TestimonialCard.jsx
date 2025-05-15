@@ -1,27 +1,35 @@
-import { FaStar } from "react-icons/fa"
+import { Star } from "lucide-react"
 
-export default function TestimonialCard({ rating, text, image, work, name }) {
+export default function TestimonialCard({ image, text, rating, name, work }) {
   return (
-    <div className="w-[360px] border border-blue-200 rounded-lg h-fit bg-blue-100 p-3 hover:bg-blue-200 hover:shadow-md transition duration-150 ease-in-out cursor-pointer">
-      <section className="w-full h-20 flex gap-4 items-center px-2">
-        <span className="w-16 h-16 border border-gray-100 rounded-full">
-          <img
-            src={image}
-            alt="person"
-            className="w-full h-full rounded-full object-cover"
+    <div className="h-full p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col">
+      {/* Rating Stars */}
+      <div className="flex mb-4">
+        {[...Array(5)].map((_, i) => (
+          <Star
+            key={i}
+            size={20}
+            className={
+              i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+            }
           />
-        </span>
-        <div className="h-28 w-fit flex justify-center flex-col">
-          <h2 className="text-gray-800 font-semibold">{name}</h2>
-          <p className="text-gray-600 text-sm">{work}</p>
-        </div>
-      </section>
-      <p className="font-light text-[15px] py-1 ">{text}</p>
-      <p className="py-1 text-[14px] font-semibold text-stone-600">Rate</p>
-      <div className="w-full h-fit flex space-x-1 items-center">
-        {Array.from({ length: rating }, (_, i) => i + 1).map(() => (
-          <FaStar size={15} color="orange" />
         ))}
+      </div>
+
+      {/* Testimonial Text */}
+      <p className="text-gray-600 mb-6 flex-1">{text}</p>
+
+      {/* User Info */}
+      <div className="flex items-center mt-auto">
+        <img
+          src={image}
+          alt={name}
+          className="w-12 h-12 rounded-full object-cover border-2 border-blue-100"
+        />
+        <div className="ml-4">
+          <h4 className="font-semibold text-gray-800">{name}</h4>
+          <p className="text-sm text-blue-600">{work}</p>
+        </div>
       </div>
     </div>
   )

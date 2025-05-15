@@ -30,8 +30,18 @@ const validateBrackets = (brackets) => {
 
 export const createTaxRule = async (req, res) => {
   try {
-    const { name, category, type, year, fixed, percentage, bracket, purpose } =
-      req.body
+    const {
+      name,
+      category,
+      type,
+      year,
+      fixed,
+      percentage,
+      bracket,
+      purpose,
+      penaltyCap,
+      penaltyRate,
+    } = req.body
 
     if (!name || !category || !type || !year) {
       return res.status(400).json({
@@ -62,6 +72,8 @@ export const createTaxRule = async (req, res) => {
       year: new Date(year),
       purpose,
       isActive: true,
+      penaltyRate,
+      penaltyCap,
     }
 
     if (type === "Fixed") {
@@ -174,7 +186,7 @@ export const updateTaxRule = async (req, res) => {
     // Type-specific updates (based on either new or existing type)
     const finalType = type || taxRule.type
 
-    if (finalType === "Fixed" && fixedA !== undefined) {
+    if (finalType === "Fixed") {
       if (typeof fixed !== "number" || fixed < 0) {
         return res.status(400).json({
           success: false,
@@ -184,7 +196,7 @@ export const updateTaxRule = async (req, res) => {
       taxRule.fixedAmount = fixed
     }
 
-    if (finalType === "Percentage" && percentage !== undefined) {
+    if (finalType === "Percentage") {
       if (
         typeof percentage !== "number" ||
         percentage < 0 ||
@@ -198,7 +210,7 @@ export const updateTaxRule = async (req, res) => {
       taxRule.percentageRate = percentage
     }
 
-    if (finalType === "Progressive" && bracket !== undefined) {
+    if (finalType === "Progressive") {
       const bracketError = validateBrackets(bracket)
       if (bracketError) {
         return res.status(400).json({ success: false, error: bracketError })
@@ -272,7 +284,7 @@ export const calculateTax = async (filing) => {
       throw new Error("User income not found or invalid")
     }
 
-    const monthlyIncome = user.taxDetails.personal.monthlyIncome
+    const monthlyIncome = Number(user.taxDetails.personal.monthlyIncome)
 
     console.log("monthlyIncome", monthlyIncome)
     // Calculate tax based on the tax rule type
@@ -284,13 +296,25 @@ export const calculateTax = async (filing) => {
       const brackets = taxRule.brackets.sort(
         (a, b) => a.minAmount - b.minAmount
       )
+
+      let matched = false
+
       for (const bracket of brackets) {
         if (
           monthlyIncome >= bracket.minAmount &&
           monthlyIncome <= bracket.maxAmount
         ) {
           taxAmount = monthlyIncome * (bracket.rate / 100)
+          matched = true
           break
+        }
+      }
+
+      // If income is higher than any bracket, apply the last (highest) bracket rate
+      if (!matched && brackets.length > 0) {
+        const topBracket = brackets[brackets.length - 1]
+        if (monthlyIncome > topBracket.maxAmount) {
+          taxAmount = monthlyIncome * (topBracket.rate / 100)
         }
       }
     }
@@ -319,4 +343,35 @@ export const calculateTax = async (filing) => {
 
   console.log("approved and calculated", taxAmount)
   return taxAmount
+}
+
+export const applyPenalty = (payment, penaltyRate, penaltyCap) => {
+  const currentDate = new Date()
+  const dueDate = new Date(payment.dueDate)
+
+  // Check if payment is overdue
+  if (currentDate > dueDate) {
+    // Calculate the overdue period
+    const overdueDays = Math.ceil((currentDate - dueDate) / (1000 * 3600 * 24))
+
+    // If overdue, apply penalty
+    if (overdueDays > 0) {
+      // Calculate penalty based on the rate (percentage) or fixed amount
+      let penaltyAmount = 0
+
+      // Percentage penalty
+      if (penaltyRate > 0) {
+        penaltyAmount = (payment.amount * penaltyRate) / 100
+      }
+
+      // If penalty cap is provided, ensure the penalty does not exceed the cap
+      if (penaltyCap > 0 && penaltyAmount > payment.amount * penaltyCap) {
+        penaltyAmount = payment.amount * penaltyCap
+      }
+
+      return penaltyAmount
+    }
+  }
+
+  return 0
 }

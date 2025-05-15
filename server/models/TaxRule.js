@@ -8,18 +8,30 @@ const taxRuleSchema = new mongoose.Schema({
     enum: ["Fixed", "Percentage", "Progressive"],
     required: true,
   },
-  fixedAmount: Number, // used if type === "fixed"
-  percentageRate: Number, // used if type === "percentage"
+  fixedAmount: Number,
+  percentageRate: Number,
   brackets: [
     {
       minAmount: Number,
       maxAmount: Number,
       rate: Number,
     },
-  ], // used if type === "progressive"
+  ],
   year: { type: Date, required: true },
   purpose: { type: String, required: false },
   isActive: { type: Boolean, default: true },
+  penaltyRate: {
+    type: Number,
+    required: true,
+  },
+  penaltyCap: {
+    type: Number,
+    default: 0,
+  },
+  overdueGracePeriod: {
+    type: Number,
+    default: 0,
+  },
 })
 
 const TaxRule = mongoose.model("Rule", taxRuleSchema)

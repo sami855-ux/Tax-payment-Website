@@ -4,9 +4,12 @@ import sharp from "sharp"
 import TaxFiling from "../models/TaxFilling.js"
 import TaxSchedule from "../models/TaxSchedule.js"
 import Notification from "../models/Notification.js"
-import { calculateTax } from "./taxRule.controller.js"
+import { applyPenalty, calculateTax } from "./taxRule.controller.js"
 import { cloudinary } from "../config/cloudairy.js"
 import User from "../models/userModel.js"
+import TaxRule from "../models/TaxRule.js"
+import moment from "moment"
+import Payment from "../models/TaxPayment.js"
 
 export const createTaxFiling = async (req, res) => {
   try {
@@ -50,10 +53,6 @@ export const createTaxFiling = async (req, res) => {
       timestamp: Math.floor(Date.now() / 1000),
     })
 
-    console.log("Debug values before push:", {
-      resumeUrl: cloudResponse?.secure_url,
-    })
-
     if (!cloudResponse || !cloudResponse.secure_url) {
       return res
         .status(500)
@@ -74,15 +73,18 @@ export const createTaxFiling = async (req, res) => {
       })
     }
 
-    // Parse the filing period into date range
-    const periodStart = startOfMonth(parseISO(filingPeriod + "-01"))
-    const periodEnd = endOfMonth(periodStart)
+    const user = await User.findOne({ _id: userId })
 
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "No user found",
+      })
+    }
     // Find the matching tax schedule
     const matchingSchedule = await TaxSchedule.findOne({
       taxpayer: userId,
       taxCategory,
-      status: "pending",
     })
 
     let isLate = false
@@ -98,7 +100,10 @@ export const createTaxFiling = async (req, res) => {
       taxpayer: userId,
       taxCategory,
       filingPeriod,
-      totalAmount,
+      totalAmount:
+        taxCategory === "personal"
+          ? user.taxDetails?.personal?.monthlyIncome
+          : totalAmount,
       paymentPurpose,
       documentFiled: cloudResponse?.secure_url,
       notes,
@@ -106,6 +111,7 @@ export const createTaxFiling = async (req, res) => {
       paymentStatus: "unpaid",
       isLate,
       taxSchedules: matchingSchedule,
+      dueDate: matchingSchedule.dueDate,
     })
 
     await newFiling.save()
@@ -160,6 +166,18 @@ export const reviewTaxFiling = async (req, res) => {
       })
     }
 
+    console.log(filing.taxCategory)
+
+    const taxRule = await TaxRule.findOne({
+      category: { $regex: new RegExp(`^${filing.taxCategory}$`, "i") },
+    })
+
+    if (!taxRule) {
+      return res.status(404).json({
+        success: false,
+        message: "Tax rule not found.",
+      })
+    }
     filing.status = decision
 
     if (remarks) {
@@ -168,9 +186,13 @@ export const reviewTaxFiling = async (req, res) => {
 
     const calculatedTax = await calculateTax(filing)
 
-    filing.calculatedTax = calculatedTax
+    const penalty = applyPenaltyFilling(
+      filing,
+      taxRule.penaltyRate,
+      taxRule.penaltyCap
+    )
 
-    console.log("Filling", filing)
+    filing.calculatedTax = calculatedTax + penalty
 
     await filing.save()
 
@@ -196,6 +218,31 @@ export const reviewTaxFiling = async (req, res) => {
       message: "Internal server error.",
     })
   }
+}
+
+const applyPenaltyFilling = (filling, penaltyRate, penaltyCap) => {
+  const currentDate = new Date()
+  const dueDate = new Date(filling.dueDate)
+
+  if (currentDate > dueDate) {
+    const overdueDays = Math.ceil((currentDate - dueDate) / (1000 * 3600 * 24))
+
+    if (overdueDays > 0) {
+      let penaltyAmount = 0
+
+      if (penaltyRate > 0) {
+        penaltyAmount = (filling.calculateTax * penaltyRate) / 100
+      }
+
+      if (penaltyCap > 0 && penaltyAmount > filling.amount * penaltyCap) {
+        penaltyAmount = filling.calculateTax * penaltyCap
+      }
+
+      return penaltyAmount
+    }
+  }
+
+  return 0
 }
 
 export const getAllAssignedTaxpayerFilings = async (req, res) => {
@@ -405,5 +452,119 @@ export const getPendingTaxFilingsForUser = async (req, res) => {
       success: false,
       message: "Server error while fetching pending tax filings.",
     })
+  }
+}
+
+export const getTaxTimelineData = async (req, res) => {
+  try {
+    const currentYear = new Date().getFullYear()
+    const lastYear = currentYear - 1
+
+    const months = moment.monthsShort()
+    const timelineData = months.map((month) => ({
+      name: month,
+      filings: 0,
+      payments: 0,
+      lastYear: 0,
+    }))
+
+    // Fetch filings for current year
+    const thisYearFilings = await TaxFiling.find({
+      filingDate: {
+        $gte: new Date(`${currentYear}-01-01`),
+        $lte: new Date(`${currentYear}-12-31`),
+      },
+    })
+
+    // Fetch filings from last year
+    const lastYearFilings = await TaxFiling.find({
+      filingDate: {
+        $gte: new Date(`${lastYear}-01-01`),
+        $lte: new Date(`${lastYear}-12-31`),
+      },
+    })
+
+    // Populate current year data
+    for (const filing of thisYearFilings) {
+      const monthIndex = new Date(filing.filingDate).getMonth()
+      timelineData[monthIndex].filings += 1
+
+      if (
+        filing.paymentStatus === "paid" ||
+        filing.paymentStatus === "partially_paid"
+      ) {
+        timelineData[monthIndex].payments += 1
+      }
+    }
+
+    // Populate last year data
+    for (const filing of lastYearFilings) {
+      const monthIndex = new Date(filing.filingDate).getMonth()
+      timelineData[monthIndex].lastYear += 1
+    }
+
+    res.status(200).json({ success: true, timelineData })
+  } catch (error) {
+    console.error("Error generating tax timeline:", error)
+    res.status(500).json({ error: "Server error while fetching timeline data" })
+  }
+}
+
+export const getRecentActivityFeed = async (req, res) => {
+  try {
+    const recentFilings = await TaxFiling.find({
+      status: { $in: ["submitted", "approved"] },
+    })
+      .populate("taxpayer", "fullName businessName")
+      .sort({ createdAt: -1 })
+      .limit(5)
+
+    const filedActivities = recentFilings.map((filing) => ({
+      type: "filed",
+      name: filing.taxpayer.businessName || filing.taxpayer.fullName,
+      amount: null,
+    }))
+
+    // Get missed filings (pending & late)
+    const missedFilings = await TaxFiling.find({
+      status: "pending",
+      isLate: true,
+    })
+      .populate("taxpayer", "fullName ")
+      .sort({ createdAt: -1 })
+      .limit(5)
+
+    const missedActivities = missedFilings.map((filing) => ({
+      type: "missed",
+      name: filing.taxpayer.fullName,
+      amount: null,
+    }))
+
+    // Get recent payments
+    const recentPayments = await Payment.find({
+      status: { $in: ["Paid", "Partially Paid"] },
+    })
+      .populate("taxpayer", "fullName")
+      .sort({ paymentDate: -1 })
+      .limit(5)
+
+    const paidActivities = recentPayments.map((payment) => ({
+      type: "paid",
+      name: payment.taxpayer.fullName,
+      amount: payment.amount,
+    }))
+
+    const merged = [
+      ...filedActivities,
+      ...missedActivities,
+      ...paidActivities,
+    ].sort(() => Math.random() - 0.5)
+
+    const activityData = merged.slice(0, 7)
+
+    res.status(200).json({ activityData, success: true })
+  } catch (err) {
+    console.error("Error generating activity feed:", err)
+    res.status(500).json({ error: "Failed to get activity feed" })
   }
 }

@@ -63,6 +63,10 @@ const taxFilingSchema = new mongoose.Schema(
       type: String, // Additional notes or comments about the tax filing
       required: false, // Optional field
     },
+    dueDate: {
+      type: String,
+      required: true,
+    },
     taxPayments: [
       {
         type: mongoose.Schema.Types.ObjectId,

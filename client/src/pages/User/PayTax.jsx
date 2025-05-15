@@ -2,12 +2,13 @@ import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 
 import BillingReceiptPreview from "./BillingView"
-import { cn } from "@/helpers/util"
+import { cn, readFileAsDataURL } from "@/helpers/util"
 import Modal from "@/ui/Modal"
 import { createPayment, getApprovedTaxFilingsForUser } from "@/services/Tax"
 import toast from "react-hot-toast"
 import { Wallet } from "lucide-react"
 import { validatePhoneNumber } from "@/helpers/Validiation"
+import { FiUpload } from "react-icons/fi"
 
 const buildTaxTypesFromSchedules = (schedules) => {
   const uniqueCategories = new Set()
@@ -65,12 +66,12 @@ export default function PayTax() {
 
   const [selected, setSelected] = useState("full")
   const [partialAmount, setPartialAmount] = useState("")
-  const [scheduledDate, setScheduledDate] = useState("")
   const [selectedTax, setSelectedTax] = useState(null)
   const [selectedPayment, setSelectedPayment] = useState("telebirr")
   const [isOpen, setIsOpen] = useState(false)
   const [phoneNumber, setPhoneNumber] = useState("")
-  const [filePhoto, setFilePhoto] = useState("")
+  const [filePhoto, setFilePhoto] = useState(null)
+  const [filePreview, setFilePreview] = useState("")
   const [bankName, setBankName] = useState("")
   const [bankNumber, setBankNumber] = useState(0)
   const [senderName, setSenderName] = useState("")
@@ -87,30 +88,43 @@ export default function PayTax() {
   const handlePayment = async (e) => {
     e.preventDefault()
 
+    if (!filePhoto) {
+      toast.error("Recept image is needed")
+      return
+    }
+
     const tax = approved.filter((data) => data.taxCategory === selectedTax)[0]
 
     const formData = new FormData()
     formData.append("taxFilingId", tax._id)
     formData.append("amount", tax.calculatedTax)
     formData.append("paymentType", selected)
-    formData.append("method", selectedPayment)
-    formData.append("dueDate", tax.filingDate)
+    formData.append(
+      "method",
+      selectedPayment === "bankTransfer" ? "Bank Transfer" : selectedPayment
+    )
     formData.append("bankName", bankName)
     formData.append("senderName", senderName)
     formData.append("bankNumber", bankNumber)
+    formData.append("dueDate", tax.dueDate)
+
+    if (selectedPayment === "bankTransfer") {
+      if (!bankName || !bankNumber) {
+        toast.error("Some filed are not filled")
+        return
+      }
+    }
+
     // file object
     if (selected === "partial") {
       formData.append("payAmount", parseFloat(partialAmount))
     }
 
-    if (!filePhoto) {
-      toast.error("Recept image is needed")
-      return
-    }
-    if (!validatePhoneNumber(phoneNumber)) {
-      toast.error("Phone number is not correct")
-      return
-    }
+    if (selectedPayment !== "bankTransfer")
+      if (!validatePhoneNumber(phoneNumber) || !phoneNumber) {
+        toast.error("Phone number is not correct")
+        return
+      }
 
     formData.append("phoneNumber", phoneNumber)
     formData.append("paymentReceiptImage", filePhoto)
@@ -120,16 +134,35 @@ export default function PayTax() {
 
       if (res.success) {
         handleApproved()
+
         toast.success(res.message)
+
+        setFilePhoto(null)
+        setPartialAmount("")
+        setBankName("")
+        setBankNumber("")
+        setPhoneNumber()
+        setFilePreview("")
+        setSelectedPayment("telebirr")
+        setSelected("full")
+        setIsOpen(false)
       } else {
         toast.error(res.error)
       }
     } catch (error) {
       toast.error(error)
     }
-    console.log(data)
   }
   console.log(approved)
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setFilePhoto(file)
+      const dataUrl = await readFileAsDataURL(file)
+      setFilePreview(dataUrl)
+    }
+  }
 
   useEffect(() => {
     handleApproved()
@@ -673,34 +706,38 @@ export default function PayTax() {
                 />
               </div>
               <div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="file"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Upload Receipt
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <label
-                      htmlFor="file"
-                      className=" bg-blue-200 text-gray-900 cursor-pointer text-[15px] py-2  px-4 rounded-md hover:bg-blue-300 transition-all"
-                    >
-                      Select Image
-                    </label>
-                    <span className="text-gray-500">
-                      {filePhoto ? filePhoto.name : "No file selected"} No file
-                      selected
-                    </span>
+                <label className="flex flex-col items-center justify-center w-full p-6 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:border-emerald-400 transition-colors">
+                  <div className="flex flex-col items-center justify-center">
+                    <FiUpload className="w-8 h-8 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-500">
+                      {filePhoto
+                        ? filePhoto.name
+                        : "Click to upload or drag and drop"}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      PDF, JPG, or PNG (max. 5MB)
+                    </p>
                   </div>
+                  {filePreview && (
+                    <motion.div
+                      className="flex items-center justify-center w-full h-64 overflow-hidden rounded-md"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <img
+                        src={filePreview}
+                        alt="preview_img"
+                        className="object-contain w-full h-full"
+                      />
+                    </motion.div>
+                  )}
                   <input
                     type="file"
-                    id="file"
-                    name="file"
-                    value={filePhoto}
-                    onChange={(e) => setFilePhoto(e.target.value)}
-                    className="hidden" // Hide the default file input
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png"
                   />
-                </div>
+                </label>
               </div>
               <button
                 type="submit"
@@ -731,35 +768,38 @@ export default function PayTax() {
                   required
                 />
               </div>
-              <div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="file"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Upload Receipt
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <label
-                      htmlFor="file"
-                      className=" bg-blue-200 text-gray-900 cursor-pointer text-[15px] py-2  px-4 rounded-md hover:bg-blue-300 transition-all"
-                    >
-                      Select Image
-                    </label>
-                    <span className="text-gray-500">
-                      {filePhoto ? filePhoto.name : "No file selected"}
-                    </span>
-                  </div>
-                  <input
-                    type="file"
-                    id="file"
-                    name="file"
-                    value={filePhoto}
-                    onChange={(e) => setFilePhoto(e.target.value)}
-                    className="hidden" // Hide the default file input
-                  />
+              <label className="flex flex-col items-center justify-center w-full p-6 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:border-emerald-400 transition-colors">
+                <div className="flex flex-col items-center justify-center">
+                  <FiUpload className="w-8 h-8 text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500">
+                    {filePhoto
+                      ? filePhoto.name
+                      : "Click to upload or drag and drop"}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    PDF, JPG, or PNG (max. 5MB)
+                  </p>
                 </div>
-              </div>
+                {filePreview && (
+                  <motion.div
+                    className="flex items-center justify-center w-full h-64 overflow-hidden rounded-md"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <img
+                      src={filePreview}
+                      alt="preview_img"
+                      className="object-contain w-full h-full"
+                    />
+                  </motion.div>
+                )}
+                <input
+                  type="file"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                />
+              </label>
               <button
                 type="submit"
                 onClick={handlePayment}
@@ -790,33 +830,38 @@ export default function PayTax() {
                 />
               </div>
               <div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="file"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Upload Receipt
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <label
-                      htmlFor="file"
-                      className=" bg-blue-200 text-gray-900 cursor-pointer text-[15px] py-2  px-4 rounded-md hover:bg-blue-300 transition-all"
-                    >
-                      Select Image
-                    </label>
-                    <span className="text-gray-500">
-                      {filePhoto ? filePhoto.name : "No file selected"}{" "}
-                    </span>
+                <label className="flex flex-col items-center justify-center w-full p-6 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:border-emerald-400 transition-colors">
+                  <div className="flex flex-col items-center justify-center">
+                    <FiUpload className="w-8 h-8 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-500">
+                      {filePhoto
+                        ? filePhoto.name
+                        : "Click to upload or drag and drop"}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      PDF, JPG, or PNG (max. 5MB)
+                    </p>
                   </div>
+                  {filePreview && (
+                    <motion.div
+                      className="flex items-center justify-center w-full h-64 overflow-hidden rounded-md"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <img
+                        src={filePreview}
+                        alt="preview_img"
+                        className="object-contain w-full h-full"
+                      />
+                    </motion.div>
+                  )}
                   <input
                     type="file"
-                    id="file"
-                    name="file"
-                    value={filePhoto}
-                    onChange={(e) => setFilePhoto(e.target.value)}
-                    className="hidden" // Hide the default file input
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png"
                   />
-                </div>
+                </label>
               </div>
               <button
                 type="submit"

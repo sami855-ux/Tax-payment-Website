@@ -13,8 +13,10 @@ import {
   BadgeInfo,
   Loader2,
 } from "lucide-react"
-import { completeTaxSetup } from "@/services/apiUser"
+import { completeTaxSetup, getUserById } from "@/services/apiUser"
 import toast from "react-hot-toast"
+import { useDispatch } from "react-redux"
+import { login } from "@/redux/slice/userSlice"
 
 const TaxSetupWizard = () => {
   const [step, setStep] = useState(1)
@@ -28,6 +30,7 @@ const TaxSetupWizard = () => {
     setValue,
     reset,
   } = useForm()
+  const dispatch = useDispatch()
 
   const taxCategory = watch("taxCategory")
   const registeredForVAT = watch("registeredForVAT")
@@ -43,6 +46,18 @@ const TaxSetupWizard = () => {
   const nextStep = () => setStep((prev) => prev + 1)
   const prevStep = () => setStep((prev) => prev - 1)
 
+  const getUserInfo = async () => {
+    const res = await getUserById()
+
+    if (res.success) {
+      dispatch(
+        login({
+          user: res.user,
+        })
+      )
+    }
+  }
+
   const onSubmit = async (data) => {
     console.log(data)
     setIsSubmitting(true)
@@ -51,6 +66,7 @@ const TaxSetupWizard = () => {
 
       if (res.success) {
         toast.success(res.message)
+        getUserInfo()
       }
     } catch (error) {
       toast.success(error)

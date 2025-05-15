@@ -36,6 +36,7 @@ import ProtectedRoutes from "./ui/ProtectedRoutes"
 import Maintenance from "./pages/Admin/Maintenance"
 import PaymentLog from "./pages/Admin/PaymentLog"
 import TaxSetupWizard from "./pages/User/CompleteTax"
+import Reset from "./pages/Reset"
 
 const router = createBrowserRouter([
   {
@@ -53,6 +54,11 @@ const router = createBrowserRouter([
     path: "/register",
     element: <Register />,
     action: registerAction,
+    errorElement: <Error />,
+  },
+  {
+    path: "/reset",
+    element: <Reset />,
     errorElement: <Error />,
   },
   {

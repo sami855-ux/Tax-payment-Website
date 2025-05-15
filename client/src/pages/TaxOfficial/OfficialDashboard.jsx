@@ -34,29 +34,20 @@ import { useDispatch } from "react-redux"
 import { login } from "@/redux/slice/userSlice"
 import { getUserById } from "@/services/apiUser"
 import { fetchNotifications } from "@/redux/slice/notificationSlice"
-
-// Sample data
-const timelineData = [
-  { name: "Jan", filings: 120, payments: 100, lastYear: 80 },
-  { name: "Feb", filings: 210, payments: 190, lastYear: 120 },
-  { name: "Mar", filings: 180, payments: 160, lastYear: 140 },
-  { name: "Apr", filings: 280, payments: 250, lastYear: 180 },
-  { name: "May", filings: 200, payments: 180, lastYear: 150 },
-]
+import { useQuery } from "@tanstack/react-query"
+import {
+  fetchOfficialDashboardStats,
+  getRecentActivityFeed,
+  getTaxTimeLine,
+} from "@/services/Tax"
+import Spinner from "@/ui/Spinner"
+import SpinnerMini from "@/ui/SpinnerMini"
 
 const complianceData = [
   { name: "On Time", value: 65 },
   { name: "Late", value: 15 },
   { name: "Not Filed", value: 10 },
   { name: "Exempt", value: 10 },
-]
-
-const activityData = [
-  { type: "filed", name: "John Doe", amount: null },
-  { type: "missed", name: "Mesfin Ltd", amount: null },
-  { type: "paid", name: "Kora Corp", amount: 12500 },
-  { type: "filed", name: "Addis Trading", amount: null },
-  { type: "paid", name: "Blue Nile Inc", amount: 8700 },
 ]
 
 const COLORS = ["#0088FE", "#FFBB28", "#FF8042", "#00C49F"]
@@ -89,7 +80,7 @@ const ActivityItem = ({ type, name, amount }) => {
   return (
     <div className="py-2 border-b border-gray-200 last:border-0 flex gap-2 items-center">
       <span className="mr-2">{icons[type]}</span>
-      <span className="font-medium w-32">{name}</span> {descriptions[type]}{" "}
+      <span className="font-medium w-48 pr-4">{name}</span> {descriptions[type]}{" "}
       {amount && (
         <span className="font-semibold">{amount.toLocaleString()}</span>
       )}
@@ -109,6 +100,19 @@ const QuickActionButton = ({ icon, label }) => (
 )
 
 export default function OfficialDashboard() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["dashboard-data"],
+    queryFn: fetchOfficialDashboardStats,
+  })
+  const { data: timeLineData, isLoading: isTimeLineLoading } = useQuery({
+    queryKey: ["dashboard-data-two"],
+    queryFn: getTaxTimeLine,
+  })
+  const { data: activityData, isLoading: isFeedLoading } = useQuery({
+    queryKey: ["dashboard-data-feed"],
+    queryFn: getRecentActivityFeed,
+  })
+
   const [activeIndex, setActiveIndex] = useState(0)
   const dispatch = useDispatch()
 
@@ -131,6 +135,8 @@ export default function OfficialDashboard() {
     getUserInfo()
   }, [])
 
+  if (isLoading) return <Spinner />
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <motion.div
@@ -152,7 +158,7 @@ export default function OfficialDashboard() {
       >
         <Card
           title="Total Tax Collected"
-          value="ETB 1,240,000"
+          value={`ETB ${data.totalTaxCollected}`}
           icon={<FiDollarSign size={30} />}
         />
         <Card
@@ -162,20 +168,24 @@ export default function OfficialDashboard() {
         />
         <Card
           title="Overdue Filings"
-          value="42"
+          value={data.overduePayments}
           icon={<FiAlertCircle size={30} />}
         />
         <Card
-          title="Outstanding Payments"
-          value="ETB 380,500"
+          title="PendingTaxFilings"
+          value={data.pendingTaxFilings}
           icon={<FiClock size={30} />}
         />
         <Card
           title="Active Taxpayers"
-          value="1,842"
+          value={data.activeTaxpayers}
           icon={<FiUsers size={30} />}
         />
-        <Card title="Notices Sent" value="36" icon={<FiBell size={30} />} />
+        <Card
+          title="Notices Sent"
+          value={data.totalNoticesSent}
+          icon={<FiBell size={30} />}
+        />
       </motion.div>
 
       <motion.div
@@ -191,40 +201,44 @@ export default function OfficialDashboard() {
           <h2 className="text-lg text-gray-800 font-bold mb-4">
             Filings & Payment Timeline
           </h2>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={timelineData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Area
-                  type="monotone"
-                  dataKey="filings"
-                  name="Filings This Year"
-                  stroke="#3b82f6"
-                  fill="#93c5fd"
-                  fillOpacity={0.5}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="payments"
-                  name="Payments This Year"
-                  stroke="#10b981"
-                  fill="#6ee7b7"
-                  fillOpacity={0.5}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="lastYear"
-                  name="Filings Last Year"
-                  stroke="#d1d5db"
-                  fill="#e5e7eb"
-                  fillOpacity={0.5}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          {isTimeLineLoading ? (
+            <SpinnerMini />
+          ) : (
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={timeLineData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area
+                    type="monotone"
+                    dataKey="filings"
+                    name="Filings This Year"
+                    stroke="#3b82f6"
+                    fill="#93c5fd"
+                    fillOpacity={0.5}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="payments"
+                    name="Payments This Year"
+                    stroke="#10b981"
+                    fill="#6ee7b7"
+                    fillOpacity={0.5}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="lastYear"
+                    name="Filings Last Year"
+                    stroke="#d1d5db"
+                    fill="#e5e7eb"
+                    fillOpacity={0.5}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
         {/* Compliance Chart */}
@@ -279,14 +293,18 @@ export default function OfficialDashboard() {
             Recent Activity
           </h2>
           <div className="space-y-2">
-            {activityData.map((item, index) => (
-              <ActivityItem
-                key={index}
-                type={item.type}
-                name={item.name}
-                amount={item.amount}
-              />
-            ))}
+            {isFeedLoading ? (
+              <SpinnerMini />
+            ) : (
+              activityData.map((item, index) => (
+                <ActivityItem
+                  key={index}
+                  type={item.type}
+                  name={item.name}
+                  amount={item.amount}
+                />
+              ))
+            )}
           </div>
         </div>
 

@@ -97,7 +97,9 @@ export default function Login() {
             <input type={styles["checkbox"]} />
             <label>Remember me </label>
           </div>
-          <span className={styles["span"]}>Forgot password?</span>
+          <span className={styles["span"]} onClick={() => navigate("/reset")}>
+            Forgot password?
+          </span>
         </div>
         <button type="submit" className={styles["button-submit"]}>
           {isSubmitting ? (

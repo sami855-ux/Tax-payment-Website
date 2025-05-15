@@ -37,6 +37,8 @@ export default function ManageTax() {
     bracket: [],
     year: "",
     isActive: false,
+    penaltyRate: 0,
+    penaltyCap: 0,
   })
 
   // Add a new bracket
@@ -56,6 +58,18 @@ export default function ManageTax() {
   }
 
   const handleCreateRule = async () => {
+    if (!formData.penaltyCap || !formData.penaltyRate || !formData.year) {
+      toast.error("Fill all the necessary fields")
+      return
+    }
+    if (formData.penaltyRate < 0 || formData.penaltyRate > 25) {
+      toast.error("Penalty rate must be between 0%- 25%")
+      return
+    }
+    if (formData.penaltyCap <= 0) {
+      toast.error("Set a correct penalty capacity amount")
+      return
+    }
     if (formData.type === "Fixed" && !formData.fixed) {
       toast.error("All fields are required. Make sure you put them")
       return
@@ -518,6 +532,39 @@ function CreateTaxRule({
               }}
             />
           </div>
+          <h2 className="font-semibold text-[16px] text-gray-700 py-4">
+            Penalty Info
+          </h2>
+          <div className="mb-4">
+            <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <FileText size={20} />{" "}
+              <span className="font-semibold text-gray-800">Penalty Rate</span>
+            </label>
+            <motion.input
+              type="number"
+              value={formData.penaltyRate}
+              onChange={(e) =>
+                setFormData({ ...formData, penaltyRate: e.target.value })
+              }
+              placeholder="rate for penalty"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-200 outline-none"
+            />
+          </div>
+          <div className="mb-4">
+            <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <FileText size={20} />{" "}
+              <span className="font-semibold text-gray-800">Max penalty</span>
+            </label>
+            <motion.input
+              type="number"
+              value={formData.penaltyCap}
+              onChange={(e) =>
+                setFormData({ ...formData, penaltyCap: e.target.value })
+              }
+              placeholder="maximum amount of tax "
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-200 outline-none"
+            />
+          </div>
         </motion.div>
       )}
 
@@ -552,9 +599,9 @@ function CreateTaxRule({
           {step < 3 ? (
             "Continue"
           ) : isLoading ? (
-            <span>
+            <span className="flex items-center gap-3">
               <Loader className="animate-spin"></Loader>
-              Creating tax rule...
+              <span>Creating tax rule...</span>
             </span>
           ) : (
             "Create Tax Rule"
@@ -843,7 +890,7 @@ function EditTaxRuleModal({ rule, onClose }) {
 
   const onSave = () => {
     if (!formData.name) {
-      toast.error("Edit something")
+      toast.error("Edit the name first")
       return
     }
     saveTaxRule(formData)
@@ -889,6 +936,17 @@ function EditTaxRuleModal({ rule, onClose }) {
                   setFormData({ ...formData, name: e.target.value })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Penalty Rate
+              </label>
+              <input
+                type="text"
+                value={rule.penaltyRate}
+                disabled={true}
+                className="w-full  disabled:bg-gray-200 disabled:cursor-not-allowed px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 

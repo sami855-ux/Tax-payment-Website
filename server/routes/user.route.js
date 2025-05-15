@@ -7,6 +7,7 @@ import {
   deleteTaxpayer,
   getAllOfficials,
   getAllUser,
+  getOfficialDashboardStats,
   getTaxpayersByOfficial,
   // getTaxpayersByOfficial,
   getUserById,
@@ -25,6 +26,7 @@ import upload from "../config/multer.js"
 
 const router = express.Router()
 
+router.get("/dashboard", isAuthenticated, getOfficialDashboardStats)
 //! assign official to taxpayer => Admin
 router.patch("/assign", isAuthenticated, assignOfficialToTaxpayer)
 
@@ -56,7 +58,5 @@ router.post("/logout", logoutUser)
 router.patch("/role/:id", isAuthenticated, changeUserRole)
 //complete tax setup
 router.post("/tax-setup", isAuthenticated, completeTaxSetup)
-
-// get all official
 
 export default router

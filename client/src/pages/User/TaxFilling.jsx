@@ -90,6 +90,11 @@ export default function TaxFilling() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!file || !filePreview) {
+      toast.error("Document file is needed")
+      return
+    }
+
     setIsSubmitting(true)
 
     const formData = new FormData()
@@ -105,7 +110,6 @@ export default function TaxFilling() {
       formData.append("documentFiled", file)
     }
 
-    console.log(file)
     try {
       const res = await createTaxFiling(formData)
 

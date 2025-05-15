@@ -61,10 +61,6 @@ const createPayment = async (req, res) => {
       timestamp: Math.floor(Date.now() / 1000),
     })
 
-    console.log("Debug values before push:", {
-      resumeUrl: cloudResponse?.secure_url,
-    })
-
     if (!cloudResponse || !cloudResponse.secure_url) {
       return res
         .status(500)
@@ -164,7 +160,7 @@ const createPayment = async (req, res) => {
       recipient: taxFiling.taxpayer,
       recipientModel: "taxpayer",
       type: "success",
-      message: `Your ${taxFiling.taxCategory} tax is payed successfully`,
+      message: `Your ${taxFiling.taxCategory} tax with the amount of ${amount} birr is payed successfully, Wait for approval from your tax official`,
     })
 
     return res
@@ -192,6 +188,8 @@ const updateTaxFilingStatus = async (taxFilingId) => {
     (total, payment) => total + payment.amount,
     0
   )
+
+  console.log(totalPaid, taxFiling.calculatedTax)
 
   // Determine payment status
   if (totalPaid >= taxFiling.calculatedTax) {
@@ -253,6 +251,7 @@ export const getPaymentsForOfficial = async (req, res) => {
       .sort({ createdAt: -1 })
 
     const formatted = payments.map((p) => ({
+      id: p._id,
       paymentId: p.referenceId,
       taxpayerName: p.taxpayer?.fullName || "N/A",
       taxType: p.taxCategory,
@@ -263,12 +262,69 @@ export const getPaymentsForOfficial = async (req, res) => {
       paymentMethod: p.method,
       status: p.status === "Paid" ? "Verified" : p.status,
       taxpayerId: p.taxpayer?.taxId || "N/A",
+      paymentReceiptImage: p.paymentReceiptImage || "N/A",
     }))
 
     return res.status(200).json({ success: true, payment: formatted })
   } catch (error) {
     console.error("Error fetching payments for official:", error)
     return res.status(500).json({ success: false, message: "Server Error" })
+  }
+}
+
+export const approvePayment = async (req, res) => {
+  try {
+    const { status } = req.body
+    const { paymentId } = req.params
+
+    console.log(status)
+    if (!paymentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment ID is required",
+      })
+    }
+
+    const payment = await Payment.findById(paymentId)
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      })
+    }
+
+    if (payment.status === "Paid") {
+      return res.status(400).json({
+        success: false,
+        message: "Payment is already approved",
+      })
+    }
+
+    // Update payment status and paymentDate
+    payment.status = status
+    payment.paymentDate = new Date()
+
+    await payment.save()
+
+    await Notification.create({
+      recipient: payment.taxpayer,
+      recipientModel: "taxpayer",
+      type: "success",
+      message: `Your ${payment.taxCategory} tax is approved successfully`,
+    })
+
+    res.status(200).json({
+      success: true,
+      message: "Payment approved successfully",
+      payment,
+    })
+  } catch (error) {
+    console.error("Approve payment error:", error)
+    res.status(500).json({
+      success: false,
+      message: "Server error during payment approval",
+    })
   }
 }
 

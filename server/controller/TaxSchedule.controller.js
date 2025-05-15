@@ -113,7 +113,7 @@ export const sendUserTaxReminders = async (req, res) => {
         message: `Reminder: Your ${
           schedule.taxCategory
         } tax is due on ${schedule.dueDate.toDateString()}.`,
-        link: "/dashboard/filings",
+        link: "/official/taxFilling",
       })
 
       // Mark the reminder as sent

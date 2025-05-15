@@ -5,7 +5,9 @@ import {
   getAllAssignedTaxpayerFilings,
   getApprovedTaxFilingsForUser,
   getPendingTaxFilingsForUser,
+  getRecentActivityFeed,
   getTaxPaymentTrends,
+  getTaxTimelineData,
   reviewTaxFiling,
 } from "../controller/taxFilling.controller.js"
 import upload from "../config/multer.js"
@@ -25,5 +27,7 @@ router.post("/review", isAuthenticated, reviewTaxFiling)
 router.get("/approved", isAuthenticated, getApprovedTaxFilingsForUser)
 router.get("/getPaymentTrend", isAuthenticated, getTaxPaymentTrends)
 router.get("/pending", isAuthenticated, getPendingTaxFilingsForUser)
+router.get("/timeline", isAuthenticated, getTaxTimelineData)
+router.get("/dashboard/activity-feed", getRecentActivityFeed)
 
 export default router
