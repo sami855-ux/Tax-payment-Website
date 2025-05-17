@@ -39,6 +39,7 @@ export default function ManageTax() {
     isActive: false,
     penaltyRate: 0,
     penaltyCap: 0,
+    taxType: "",
   })
 
   // Add a new bracket
@@ -58,7 +59,13 @@ export default function ManageTax() {
   }
 
   const handleCreateRule = async () => {
-    if (!formData.penaltyCap || !formData.penaltyRate || !formData.year) {
+    if (
+      !formData.penaltyCap ||
+      !formData.penaltyRate ||
+      !formData.year ||
+      !formData.taxType ||
+      !formData.type
+    ) {
       toast.error("Fill all the necessary fields")
       return
     }
@@ -301,7 +308,7 @@ function TaxRulesTable({ rules, onEdit, onDelete }) {
         <div className="grid grid-cols-12 bg-gray-200 p-4 font-medium border-b border-gray-200">
           <div className="col-span-3 text-gray-800">Tax Name</div>
           <div className="col-span-2 text-gray-800">Category</div>
-          <div className="col-span-2 text-gray-800">Type</div>
+          <div className="col-span-2 text-gray-800">Calculation Type</div>
           <div className="col-span-2 text-gray-800">Rate/Amount</div>
           <div className="col-span-1 text-gray-800">Year</div>
           <div className="col-span-1 text-gray-800">Status</div>
@@ -434,11 +441,60 @@ function CreateTaxRule({
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-200 outline-none"
             >
-              <option value="">Select tax category</option>
-              <option value="Personal">Personal</option>
-              <option value="Property">Property</option>
-              <option value="VAT">VAT</option>
-              <option value="Business">Business</option>
+              <option
+                value=""
+                disabled={true}
+                className="text-[15px] cursor-pointer"
+              >
+                Select tax category
+              </option>
+              <option value="Personal" className="text-[15px] cursor-pointer">
+                Personal
+              </option>
+              <option value="Property" className="text-[15px] cursor-pointer">
+                Property
+              </option>
+              <option value="VAT" className="text-[15px] cursor-pointer">
+                VAT
+              </option>
+              <option value="Business" className="text-[15px] cursor-pointer">
+                Business
+              </option>
+            </select>
+          </div>
+          <div className="mb-4">
+            <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <Landmark size={20} />{" "}
+              <span className="font-semibold text-gray-800">
+                Calculation Method
+              </span>
+            </label>
+            <select
+              value={formData.type}
+              onChange={(e) =>
+                setFormData({ ...formData, type: e.target.value })
+              }
+              className="w-full  px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-200 outline-none"
+            >
+              <option
+                value=""
+                disabled={true}
+                className="text-[15px] cursor-pointer"
+              >
+                Select calculation Method
+              </option>
+              <option value="Fixed" className="text-[15px] cursor-pointer">
+                Fixed
+              </option>
+              <option value="Percentage" className="text-[15px] cursor-pointer">
+                Percentage
+              </option>
+              <option
+                value="Progressive"
+                className="text-[15px] cursor-pointer"
+              >
+                Progressive
+              </option>
             </select>
           </div>
           <div className="mb-4">
@@ -447,16 +503,25 @@ function CreateTaxRule({
               <span className="font-semibold text-gray-800">Tax Type</span>
             </label>
             <select
-              value={formData.type}
+              value={formData.taxType}
               onChange={(e) =>
-                setFormData({ ...formData, type: e.target.value })
+                setFormData({ ...formData, taxType: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-200 outline-none"
+              className="w-full px-4 py-2 border cursor-pointer border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-200 outline-none"
             >
-              <option value="">Select tax type</option>
-              <option value="Fixed">Fixed</option>
-              <option value="Percentage">Percentage</option>
-              <option value="Progressive">Progressive</option>
+              <option
+                value=""
+                disabled={true}
+                className="text-[15px] cursor-pointer"
+              >
+                Select tax type
+              </option>
+              <option value="direct" className="text-[15px] cursor-pointer">
+                Direct
+              </option>
+              <option value="indirect" className="text-[15px] cursor-pointer">
+                Indirect
+              </option>
             </select>
           </div>
         </motion.div>
@@ -587,7 +652,10 @@ function CreateTaxRule({
           }
           ${
             step == 1
-              ? formData.name && formData.type && formData.category
+              ? formData.name &&
+                formData.type &&
+                formData.category &&
+                formData.taxType
                 ? ""
                 : "cursor-not-allowed bg-gray-200"
               : ""
@@ -1269,93 +1337,6 @@ function DeleteConfirmation({ ruleName, onCancel, rule, ruleToDelete }) {
           </motion.button>
         </div>
       </motion.div>
-    </motion.div>
-  )
-}
-
-// Component for scheduled tax updates timeline
-function TaxScheduleTimeline({ scheduledChanges, onAddNew }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="bg-white rounded-xl shadow-lg p-6"
-    >
-      <h2 className="text-2xl font-bold mb-6">Scheduled Tax Updates</h2>
-
-      <div className="relative">
-        {/* Timeline line */}
-        <motion.div
-          className="absolute left-4 top-0 bottom-0 w-1 bg-blue-100"
-          initial={{ scaleY: 0 }}
-          animate={{ scaleY: 1 }}
-          transition={{ duration: 0.5 }}
-        />
-
-        <div className="space-y-8">
-          {scheduledChanges.map((change, i) => (
-            <motion.div
-              key={i}
-              className="flex"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <div className="relative z-10">
-                <motion.div
-                  className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white"
-                  whileHover={{ scale: 1.2 }}
-                >
-                  {i + 1}
-                </motion.div>
-              </div>
-
-              <motion.div
-                className="flex-1 ml-4 p-4 bg-gray-50 rounded-lg shadow-sm"
-                whileHover={{ y: -5 }}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold">{change.taxName}</h3>
-                    <p className="text-gray-600">
-                      Current: {change.currentRate} → New: {change.newRate}
-                    </p>
-                  </div>
-                  <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
-                    {change.effectiveDate}
-                  </div>
-                </div>
-
-                <div className="mt-2 flex justify-end gap-2">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="text-sm px-3 py-1 bg-gray-200 rounded"
-                  >
-                    Edit
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="text-sm px-3 py-1 bg-red-100 text-red-600 rounded"
-                  >
-                    Cancel
-                  </motion.button>
-                </div>
-              </motion.div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      <motion.button
-        className="mt-6 px-6 py-2 bg-blue-500 text-white rounded-lg flex items-center mx-auto"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={onAddNew}
-      >
-        <span className="mr-2">+</span> Schedule New Update
-      </motion.button>
     </motion.div>
   )
 }

@@ -1,5 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { createBrowserRouter, RouterProvider } from "react-router-dom"
+import {
+  createBrowserRouter,
+  redirect,
+  RouterProvider,
+  useNavigate,
+} from "react-router-dom"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { Toaster } from "react-hot-toast"
 
@@ -37,6 +42,10 @@ import Maintenance from "./pages/Admin/Maintenance"
 import PaymentLog from "./pages/Admin/PaymentLog"
 import TaxSetupWizard from "./pages/User/CompleteTax"
 import Reset from "./pages/Reset"
+import axios from "axios"
+import { useEffect } from "react"
+import { useDispatch } from "react-redux"
+import { login, logout } from "./redux/slice/userSlice"
 
 const router = createBrowserRouter([
   {
@@ -63,7 +72,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/admin",
-    element: <AdminLayout />,
+    element: (
+      <ProtectedRoutes role="admin">
+        <AdminLayout />
+      </ProtectedRoutes>
+    ),
     errorElement: <Error />,
     children: [
       {
@@ -113,7 +126,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/user",
-    element: <UserLayout />,
+    element: (
+      <ProtectedRoutes>
+        <UserLayout role="taxpayer" />
+      </ProtectedRoutes>
+    ),
     errorElement: <Error />,
     children: [
       {
@@ -154,7 +171,11 @@ const router = createBrowserRouter([
   {
     path: "/official",
     errorElement: <Error />,
-    element: <OfficialLayout />,
+    element: (
+      <ProtectedRoutes role="official">
+        <OfficialLayout />
+      </ProtectedRoutes>
+    ),
     children: [
       {
         path: "dashboard",
@@ -192,7 +213,9 @@ const router = createBrowserRouter([
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 60 * 5,
+      refetchInterval: 1000 * 60,
+      refetchIntervalInBackground: true,
     },
   },
 })

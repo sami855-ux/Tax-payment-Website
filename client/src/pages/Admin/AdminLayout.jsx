@@ -1,15 +1,48 @@
-import { Outlet } from "react-router-dom"
-import { useState } from "react"
+import { Outlet, useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react"
 
 import Navbar from "./Navbar"
 import Menu, { MobileMenu } from "./Menu"
+import { useDispatch } from "react-redux"
+import axios from "axios"
+import { login, logout } from "@/redux/slice/userSlice"
 
 export default function AdminLayout() {
   const [isBarClicked, setIsBarClicked] = useState(false)
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
 
   const handleBarClicked = () => {
     setIsBarClicked((curr) => !curr)
   }
+
+  useEffect(() => {
+    const checkUserSession = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BASE_URL}/api/auth`,
+          {
+            withCredentials: true,
+          }
+        )
+
+        if (response.data.success) {
+          console.log(response)
+        } else {
+          navigate("/")
+        }
+      } catch (error) {
+        console.log("hi")
+        console.log(error)
+
+        dispatch(logout())
+        navigate("/")
+      }
+    }
+
+    checkUserSession()
+  }, [dispatch])
+
   return (
     <div className="w-full h-screen flex">
       {isBarClicked ? (
