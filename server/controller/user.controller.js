@@ -75,7 +75,7 @@ export const register = async (req, res) => {
     res.cookie("authToken", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 24 * 60 * 60 * 1000,
     })
 
@@ -112,7 +112,7 @@ export const login = async (req, res) => {
     res.cookie("authToken", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 24 * 60 * 60 * 1000,
     })
 
@@ -125,6 +125,29 @@ export const login = async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Server error", error: error.message })
+  }
+}
+
+export const getMe = async (req, res) => {
+  const authToken = req.cookies.authToken
+
+  if (!authToken) {
+    return res
+      .status(401)
+      .json({ message: "Not authenticated", success: false })
+  }
+
+  try {
+    const decoded = jwt.verify(authToken, process.env.JWT_SECRET)
+    const user = await User.findById(decoded.id).select("-password")
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found", success: false })
+    }
+
+    res.status(200).json({ user, success: true })
+  } catch (error) {
+    res.status(401).json({ message: "Invalid token" })
   }
 }
 
@@ -303,7 +326,7 @@ export const logoutUser = (req, res) => {
     res.clearCookie("authToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 24 * 60 * 60 * 1000,
     })
 
@@ -524,7 +547,7 @@ export const assignOfficialToTaxpayer = async (req, res) => {
       recipient: officialId,
       recipientModel: "official",
       type: "success",
-      message: `New taxpayer named ${existingTaxpayer.fullName} is assigned to you, check it out on the taxpayer route`,
+      message: `New taxpayer is assigned to you, check it out on the taxpayer route`,
       link: "/official/taxpayer",
     })
 

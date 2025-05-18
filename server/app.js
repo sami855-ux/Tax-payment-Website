@@ -13,11 +13,20 @@ import taxRuleRoutes from "./routes/TaxRule.route.js"
 import exportRoutes from "./routes/export.route.js"
 import userRoutes from "./routes/user.route.js"
 import connectDB from "./config/db.js"
+import { getMe } from "./controller/user.controller.js"
 
 const app = express()
 
+const allowedOrigin = ["https://tax-payment-website.vercel.app"]
+
 const corsOptions = {
-  origin: "http://localhost:2100",
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigin.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error("Not allowed by CORS"))
+    }
+  },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   credentials: true,
 }
@@ -33,6 +42,7 @@ dotenv.config()
 connectDB()
 
 //Routes
+app.get("/api/auth", getMe)
 app.use("/api/user", userRoutes)
 app.use("/api/rule", taxRuleRoutes)
 app.use("/api/export", exportRoutes)

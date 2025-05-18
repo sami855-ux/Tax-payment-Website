@@ -41,6 +41,7 @@ export const createTaxRule = async (req, res) => {
       purpose,
       penaltyCap,
       penaltyRate,
+      taxType,
     } = req.body
 
     if (!name || !category || !type || !year) {
@@ -50,7 +51,6 @@ export const createTaxRule = async (req, res) => {
       })
     }
 
-    // 🔎 Check for duplicate category for the same year
     const existingRule = await TaxRule.findOne({
       category,
       year: new Date(year),
@@ -74,6 +74,7 @@ export const createTaxRule = async (req, res) => {
       isActive: true,
       penaltyRate,
       penaltyCap,
+      taxType,
     }
 
     if (type === "Fixed") {

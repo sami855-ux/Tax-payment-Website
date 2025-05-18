@@ -32,6 +32,11 @@ const taxRuleSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  taxType: {
+    type: String,
+    enum: ["direct", "indirect"], // ✅ NEW FIELD
+    required: true,
+  },
 })
 
 const TaxRule = mongoose.model("Rule", taxRuleSchema)
