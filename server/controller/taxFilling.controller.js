@@ -290,6 +290,7 @@ export const getAllAssignedTaxpayerFilings = async (req, res) => {
         year: "numeric",
       }),
       taxpayerId: filing.taxpayer._id,
+      documentFiled: filing.documentFiled,
     }))
 
     res.status(200).json({
