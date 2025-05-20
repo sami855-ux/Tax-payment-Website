@@ -93,7 +93,7 @@ export default function PayTax() {
       return
     }
 
-    const tax = approved.filter((data) => data.taxCategory === selectedTax)[0]
+    const tax = approved?.filter((data) => data.taxCategory === selectedTax)[0]
 
     const formData = new FormData()
     formData.append("taxFilingId", tax._id)
@@ -215,9 +215,9 @@ export default function PayTax() {
                       Outstanding Amount
                     </p>
                     <p className="text-2xl font-bold text-gray-800">
-                      {approved && approved.length > 0
+                      {approved && approved?.length > 0
                         ? approved
-                            .reduce(
+                            ?.reduce(
                               (total, item) => total + item.calculatedTax,
                               0
                             )
@@ -277,9 +277,9 @@ export default function PayTax() {
                   Tax Breakdown
                 </h3>
 
-                {approved && approved.length > 0 ? (
+                {approved && approved?.length > 0 ? (
                   <div className="divide-y divide-gray-200">
-                    {approved.map((data) => {
+                    {approved?.map((data) => {
                       const filingDate = new Date(data.filingDate)
                       const dueDate = new Date(
                         filingDate.setMonth(filingDate.getMonth() + 1)
