@@ -1,50 +1,60 @@
+import useAdminDashboardStats from "@/context/useAdminDashbaordStats"
 import { motion } from "framer-motion"
 import { DollarSign, Clock, Users, AlertTriangle, Calendar } from "lucide-react"
 
-const stats = [
-  {
-    title: "Total Tax Collected",
-    value: "$1,400,000",
-    percentage: "+12% from last month",
-    icon: <DollarSign size={24} className="text-green-600" />,
-    gradient: "from-green-100 to-green-50",
-    border: "border-l-4 border-green-500",
-  },
-  {
-    title: "Pending Tax Filings",
-    value: "23",
-    percentage: "5% decrease",
-    icon: <Clock size={24} className="text-yellow-600" />,
-    gradient: "from-amber-100 to-amber-50",
-    border: "border-l-4 border-amber-500",
-  },
-  {
-    title: "Active Taxpayers",
-    value: "12,500",
-    percentage: "+8% growth",
-    icon: <Users size={24} className="text-blue-600" />,
-    gradient: "from-blue-100 to-blue-50",
-    border: "border-l-4 border-blue-500",
-  },
-  {
-    title: "Late Payment Alerts",
-    value: "18",
-    percentage: "Up 2%",
-    icon: <AlertTriangle size={24} className="text-red-600" />,
-    gradient: "from-red-100 to-red-50",
-    border: "border-l-4 border-red-500",
-  },
-  {
-    title: "Next Important Due Date",
-    value: "June 15, 2025",
-    percentage: "Quarterly Tax",
-    icon: <Calendar size={24} className="text-purple-600" />,
-    gradient: "from-purple-100 to-purple-50",
-    border: "border-l-4 border-purple-500",
-  },
-]
-
 export default function Widgets() {
+  const { data, isLoading } = useAdminDashboardStats()
+
+  const stats = [
+    {
+      title: "Total Tax Collected",
+      value: isLoading
+        ? "Loading..."
+        : new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: "ETB",
+          }).format(data?.totalPaidAmount),
+      percentage: "+12% from last month",
+      icon: <DollarSign size={24} className="text-green-600" />,
+      gradient: "from-green-100 to-green-50",
+      border: "border-l-4 border-green-500",
+    },
+    {
+      title: "Pending Tax Filings",
+      value: isLoading ? "Loading..." : data?.pendingTaxFilings,
+      percentage: "5% decrease",
+      icon: <Clock size={24} className="text-yellow-600" />,
+      gradient: "from-amber-100 to-amber-50",
+      border: "border-l-4 border-amber-500",
+    },
+    {
+      title: "Active Taxpayers",
+      value: isLoading ? "Loading..." : data?.totalTaxpayers,
+      percentage: "+8% growth",
+      icon: <Users size={24} className="text-blue-600" />,
+      gradient: "from-blue-100 to-blue-50",
+      border: "border-l-4 border-blue-500",
+    },
+    {
+      title: "Late Payment Alerts",
+      value: isLoading ? "Loading..." : data?.latePaymentAlerts,
+      percentage: "Up 2%",
+      icon: <AlertTriangle size={24} className="text-red-600" />,
+      gradient: "from-red-100 to-red-50",
+      border: "border-l-4 border-red-500",
+    },
+    {
+      title: "Next Important Due Date",
+      value: isLoading
+        ? "Loading..."
+        : new Date(data?.nextDueDate).toDateString(),
+      percentage: "Quarterly Tax",
+      icon: <Calendar size={24} className="text-purple-600" />,
+      gradient: "from-purple-100 to-purple-50",
+      border: "border-l-4 border-purple-500",
+    },
+  ]
+
   return (
     <div className="flex flex-col gap-6 p-4">
       {/* First Row (3 cards) */}

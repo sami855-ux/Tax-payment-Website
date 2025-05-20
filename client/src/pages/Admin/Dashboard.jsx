@@ -43,7 +43,7 @@ export default function Dashboard() {
       </section>
       <Widgets />
       <Chart />
-      <div className="w-screen md:w-full mt-7 mb-4 bg-white pb-5 overflow-x-scroll">
+      <div className="w-screen md:w-full mt-7 mb-4 bg-white pb-5 overflow-x-scroll h-1/2">
         <PaymentHistory />
       </div>
     </div>

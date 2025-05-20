@@ -422,3 +422,57 @@ export const getRecentActivityFeed = async () => {
     throw error
   }
 }
+export const getTaxDashboardStats = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/api/user/admin/dashboard-summary`,
+      {
+        withCredentials: true,
+      }
+    )
+
+    return response.data.stats
+  } catch (error) {
+    console.error(
+      "Error fetching dashboard stats:",
+      error.response?.data || error
+    )
+    throw error
+  }
+}
+export const getRecentTaxFilingTableData = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/api/filling/adminDashboard`,
+      {
+        withCredentials: true,
+      }
+    )
+
+    return response.data.data
+  } catch (error) {
+    console.error(
+      "Error fetching dashboard stats:",
+      error.response?.data || error
+    )
+    throw error
+  }
+}
+export const getAllPaymentsForAdmin = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/api/payment/admin/payments`,
+      {
+        withCredentials: true,
+      }
+    )
+
+    return response.data.payments
+  } catch (error) {
+    console.error(
+      "Error fetching dashboard stats:",
+      error.response?.data || error
+    )
+    throw error
+  }
+}

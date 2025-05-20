@@ -328,4 +328,31 @@ export const approvePayment = async (req, res) => {
   }
 }
 
+export const getAllPaymentsForAdmin = async (req, res) => {
+  try {
+    const payments = await Payment.find()
+      .populate("taxpayer", "fullName email") // Add any fields you need
+      .sort({ createdAt: -1 })
+
+    const formattedPayments = payments.map((payment) => ({
+      referenceId: payment.referenceId,
+      taxpayerName: payment.taxpayer?.fullName || "N/A",
+      taxCategory: payment.taxCategory,
+      amount: payment.amount,
+      paymentMethod: payment.method,
+      status: payment.status,
+      paymentDate: payment.paymentDate,
+      date: payment.dueDate,
+    }))
+
+    res.status(200).json({
+      success: true,
+      payments: formattedPayments,
+    })
+  } catch (error) {
+    console.error("Failed to fetch payment records:", error)
+    res.status(500).json({ message: "Failed to retrieve payments" })
+  }
+}
+
 export { createPayment }

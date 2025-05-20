@@ -13,6 +13,8 @@ import { BarChart, Bar, Cell } from "recharts"
 import { PieChart, Pie, Cell as PieCell } from "recharts"
 //eslint-disable-next-line
 import { motion } from "framer-motion"
+import useAdminDashboardStats from "@/context/useAdminDashbaordStats"
+import Spinner from "@/ui/Spinner"
 
 const TaxRevenueData = [
   { month: "Jan", revenue: 5000 },
@@ -29,18 +31,6 @@ const TaxRevenueData = [
   { month: "Dec", revenue: 12000 },
 ]
 
-const PaymentsByTaxTypeData = [
-  { taxType: "VAT", payment: 300000 },
-  { taxType: "Income Tax", payment: 450000 },
-  { taxType: "Property Tax", payment: 200000 },
-]
-
-const UserFilingStatusData = [
-  { name: "Filed", value: 500 },
-  { name: "Pending", value: 150 },
-  { name: "Overdue", value: 50 },
-]
-
 const ChartCard = ({ title, children }) => (
   <motion.div
     className="rounded-xl shadow-lg p-6 bg-white"
@@ -54,12 +44,16 @@ const ChartCard = ({ title, children }) => (
 )
 
 export default function DashboardCharts() {
+  const { data, isLoading } = useAdminDashboardStats()
+
+  if (isLoading) return <Spinner />
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-8">
       {/* Line Chart: Tax Revenue Collected per Month */}
       <ChartCard title="Tax Revenue Collected per Month">
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={TaxRevenueData}>
+          <LineChart data={data.TaxRevenueData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
@@ -78,14 +72,14 @@ export default function DashboardCharts() {
       {/* Bar Chart: Payments by Tax Type */}
       <ChartCard title="Payments by Tax Type">
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={PaymentsByTaxTypeData}>
+          <BarChart data={data.PaymentsByTaxTypeData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="taxType" />
             <YAxis />
             <Tooltip />
             <Legend />
             <Bar dataKey="payment" fill="#FF6384">
-              {PaymentsByTaxTypeData.map((entry, index) => (
+              {data.PaymentsByTaxTypeData.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
                   fill={index % 2 === 0 ? "#36A2EB" : "#FFCE56"}
@@ -101,7 +95,7 @@ export default function DashboardCharts() {
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie
-              data={UserFilingStatusData}
+              data={data.UserFilingStatusData}
               dataKey="value"
               nameKey="name"
               cx="50%"
@@ -109,18 +103,23 @@ export default function DashboardCharts() {
               outerRadius={80}
               fill="#FF6384"
             >
-              {UserFilingStatusData.map((entry, index) => (
-                <PieCell
-                  key={`cell-${index}`}
-                  fill={
-                    index === 0
-                      ? "#4caf50"
-                      : index === 1
-                      ? "#ff9800"
-                      : "#f44336"
-                  }
-                />
-              ))}
+              {data.UserFilingStatusData &&
+              data.UserFilingStatusData.length > 0 ? (
+                data.UserFilingStatusData.map((entry, index) => (
+                  <PieCell
+                    key={`cell-${index}`}
+                    fill={
+                      index === 0
+                        ? "#4caf50"
+                        : index === 1
+                        ? "#ff9800"
+                        : "#f44336"
+                    }
+                  />
+                ))
+              ) : (
+                <p className="text-center ">No data available</p>
+              )}
             </Pie>
             <Tooltip />
             <Legend />

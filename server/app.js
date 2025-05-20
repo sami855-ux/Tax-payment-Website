@@ -17,7 +17,10 @@ import { getMe } from "./controller/user.controller.js"
 
 const app = express()
 
-const allowedOrigin = ["https://tax-payment-website.vercel.app"]
+const allowedOrigin = [
+  "https://tax-payment-website.vercel.app",
+  "http://localhost:2100",
+]
 
 const corsOptions = {
   origin: function (origin, callback) {

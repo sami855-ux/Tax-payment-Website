@@ -568,3 +568,37 @@ export const getRecentActivityFeed = async (req, res) => {
     res.status(500).json({ error: "Failed to get activity feed" })
   }
 }
+
+export const getRecentTaxFilingTableData = async (req, res) => {
+  try {
+    const filings = await TaxFiling.find()
+      .populate("taxpayer", "fullName email")
+      .populate({
+        path: "taxPayments",
+        select: "paymentMethod",
+      })
+      .sort({ createdAt: -1 })
+
+    const tableData = filings.map((filing) => {
+      const latestPayment = filing.taxPayments?.[0]
+      return {
+        referenceId: filing._id,
+        taxpayerName: filing.taxpayer?.fullName || "Unknown",
+        taxCategory: filing.taxCategory,
+        amount: filing.calculatedTax || filing.totalAmount || 0,
+        paymentMethod: latestPayment?.paymentMethod || "N/A",
+        status: filing.paymentStatus,
+        paymentPurpose: filing.paymentPurpose || "N/A",
+        paymentStatus: filing.status || "N/A",
+      }
+    })
+
+    return res.status(200).json({
+      success: true,
+      data: tableData,
+    })
+  } catch (error) {
+    console.error("Error fetching tax filing table data:", error)
+    return res.status(500).json({ message: "Server Error" })
+  }
+}

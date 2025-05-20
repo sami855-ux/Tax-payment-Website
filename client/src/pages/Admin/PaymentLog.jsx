@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useTable, useFilters, usePagination, useSortBy } from "react-table"
 import { motion, AnimatePresence } from "framer-motion"
 import { format, parseISO } from "date-fns"
@@ -20,148 +20,36 @@ import {
   FiArrowRight,
   FiFlag,
 } from "react-icons/fi"
+import { useQuery } from "@tanstack/react-query"
+import { getAllPaymentsForAdmin } from "@/services/Tax"
 
 const PaymentLog = () => {
-  // Sample data
-  const sampleData = useMemo(
-    () => [
-      {
-        id: "TXN-84571254",
-        taxpayerName: "ተሾመ ወ/ጊዮርጊስ",
-        email: "teshome@example.com",
-        taxCategory: "VAT",
-        amount: 4320,
-        date: "2025-04-29T12:35:00",
-        paymentMethod: "Mobile Money",
-        status: "Success",
-        referenceNo: "R123456",
-        description: "Paid for Q1 VAT",
-        receiptUrl: "/receipts/txn-84571254.pdf",
-        disputed: false,
-      },
-      {
-        id: "TXN-84571255",
-        taxpayerName: "ሰማይ አበበ",
-        email: "samay@example.com",
-        taxCategory: "Income Tax",
-        amount: 12500,
-        date: "2025-04-28T09:15:00",
-        paymentMethod: "Bank Transfer",
-        status: "Success",
-        referenceNo: "R123457",
-        description: "Annual income tax payment",
-        receiptUrl: "/receipts/txn-84571255.pdf",
-        disputed: false,
-      },
-      {
-        id: "TXN-84571256",
-        taxpayerName: "ሀዋሳ ተክለሃይማኖት",
-        email: "hawassa@example.com",
-        taxCategory: "Property Tax",
-        amount: 8700,
-        date: "2025-04-27T14:22:00",
-        paymentMethod: "Card",
-        status: "Pending",
-        referenceNo: "R123458",
-        description: "Commercial property tax Q2",
-        receiptUrl: null,
-        disputed: false,
-      },
-      {
-        id: "TXN-84571257",
-        taxpayerName: "ዘሪቱ ከበደ",
-        email: "zeritu@example.com",
-        taxCategory: "VAT",
-        amount: 3200,
-        date: "2025-04-25T16:45:00",
-        paymentMethod: "Mobile Money",
-        status: "Failed",
-        referenceNo: "R123459",
-        description: "VAT payment attempt",
-        receiptUrl: null,
-        disputed: true,
-      },
-      {
-        id: "TXN-84571254",
-        taxpayerName: "ተሾመ ወ/ጊዮርጊስ",
-        email: "teshome@example.com",
-        taxCategory: "VAT",
-        amount: 4320,
-        date: "2025-04-29T12:35:00",
-        paymentMethod: "Mobile Money",
-        status: "Success",
-        referenceNo: "R123456",
-        description: "Paid for Q1 VAT",
-        receiptUrl: "/receipts/txn-84571254.pdf",
-        disputed: false,
-      },
-      {
-        id: "TXN-84571255",
-        taxpayerName: "ሰማይ አበበ",
-        email: "samay@example.com",
-        taxCategory: "Income Tax",
-        amount: 12500,
-        date: "2025-04-28T09:15:00",
-        paymentMethod: "Bank Transfer",
-        status: "Success",
-        referenceNo: "R123457",
-        description: "Annual income tax payment",
-        receiptUrl: "/receipts/txn-84571255.pdf",
-        disputed: false,
-      },
-      {
-        id: "TXN-84571256",
-        taxpayerName: "ሀዋሳ ተክለሃይማኖት",
-        email: "hawassa@example.com",
-        taxCategory: "Property Tax",
-        amount: 8700,
-        date: "2025-04-27T14:22:00",
-        paymentMethod: "Card",
-        status: "Pending",
-        referenceNo: "R123458",
-        description: "Commercial property tax Q2",
-        receiptUrl: null,
-        disputed: false,
-      },
-      {
-        id: "TXN-84571257",
-        taxpayerName: "ዘሪቱ ከበደ",
-        email: "zeritu@example.com",
-        taxCategory: "VAT",
-        amount: 3200,
-        date: "2025-04-25T16:45:00",
-        paymentMethod: "Mobile Money",
-        status: "Failed",
-        referenceNo: "R123459",
-        description: "VAT payment attempt",
-        receiptUrl: null,
-        disputed: true,
-      },
-    ],
-    []
-  )
+  const { data: paymentsData, isLoading } = useQuery({
+    queryKey: ["taxpayer-payments"],
+    queryFn: getAllPaymentsForAdmin,
+  })
 
   const [data, setData] = useState([])
-  const [loading, setLoading] = useState(true)
   const [selectedPayment, setSelectedPayment] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
 
+  // Set data from query when loaded
   useEffect(() => {
-    setLoading(true)
-    const timer = setTimeout(() => {
-      setData(sampleData)
-      setLoading(false)
-    }, 800)
-    return () => clearTimeout(timer)
-  }, [sampleData])
+    if (paymentsData) {
+      setData(paymentsData)
+    }
+  }, [paymentsData])
 
   const filteredData = useMemo(() => {
+    if (!data) return []
     return data.filter(
       (payment) =>
-        payment.taxpayerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        payment.taxCategory.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        payment.status.toLowerCase().includes(searchTerm.toLowerCase())
+        payment.taxpayerName
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        payment.taxCategory?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        payment.status?.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }, [data, searchTerm])
 
@@ -179,12 +67,13 @@ const PaymentLog = () => {
       {
         Header: "Amount",
         accessor: "amount",
-        Cell: ({ value }) => <span>{value.toLocaleString()} ETB</span>,
+        Cell: ({ value }) => <span>{value?.toLocaleString()} ETB</span>,
       },
       {
         Header: "Date",
         accessor: "date",
-        Cell: ({ value }) => format(parseISO(value), "MMM dd, yyyy"),
+        Cell: ({ value }) =>
+          value ? format(parseISO(value), "MMM dd, yyyy") : "-",
       },
       {
         Header: "Method",
@@ -301,7 +190,7 @@ const PaymentLog = () => {
             <h1 className="text-2xl font-bold text-gray-800 md:mb-0">
               Payment Logs
             </h1>
-            <p className="text-gray-500  mb-4 pt-4">
+            <p className="text-gray-500 mb-4 pt-4">
               Track and monitor all financial transactions in real-time.
             </p>
           </div>
@@ -319,7 +208,7 @@ const PaymentLog = () => {
           </div>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
           </div>
@@ -481,7 +370,7 @@ const PaymentLog = () => {
                       Amount
                     </h3>
                     <p className="mt-1 text-sm text-gray-900">
-                      {selectedPayment.amount.toLocaleString()} ETB
+                      {selectedPayment.amount?.toLocaleString()} ETB
                     </p>
                   </div>
                   <div>

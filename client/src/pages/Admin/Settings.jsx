@@ -18,20 +18,26 @@ import {
 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import toast from "react-hot-toast"
+import { useDispatch, useSelector } from "react-redux"
+import { getUserById, updateUserById } from "@/services/apiUser"
+import { login } from "@/redux/slice/userSlice"
 
 const AdminProfileSettings = () => {
+  const { user } = useSelector((store) => store.user)
+  const dispatch = useDispatch()
+
   const [activeTab, setActiveTab] = useState("profile")
-  const [imagePreview, setImagePreview] = useState("")
+  const [imagePreview, setImagePreview] = useState(user?.profilePicture || "")
   const [imageFile, setImageFile] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   // Mock admin data
   const [adminData, setAdminData] = useState({
-    name: "Admin User",
-    email: "admin@example.com",
-    phone: "+1234567890",
-    address: "123 Admin Street, Tech City",
+    name: user?.fullName,
+    email: user?.email,
+    phone: "+251 " + user?.phoneNumber,
+    address: user?.wereda,
     password: "",
   })
 
@@ -77,15 +83,62 @@ const AdminProfileSettings = () => {
   }
 
   const onSubmit = async (data) => {
-    setIsLoading(true)
+    const formData = new FormData()
 
-    // Simulate API call
+    formData.append("fullName", data.name)
+    formData.append("email", data.email)
+    formData.append("phoneNumber", data.phone)
+    formData.append("wereda", data.address)
+    formData.append("profilePicture", imageFile)
+
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      setAdminData((prev) => ({ ...prev, ...data }))
-      toast.success("Profile updated successfully!")
+      setIsLoading(true)
+      const response = await updateUserById(formData)
+
+      if (response.success) {
+        toast.success("Profile updated successfully")
+
+        const res = await getUserById()
+        if (res.success) {
+          dispatch(
+            login({
+              user: res.user,
+            })
+          )
+          if (res.user.profilePicture) {
+            setImagePreview(res.user.profilePicture)
+          }
+        }
+      } else {
+        toast.error(response.error?.message || "Failed to update profile")
+      }
     } catch (error) {
-      toast.error("Failed to update profile")
+      toast.error("An error occurred while updating profile")
+      console.error("Update error:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handlePasswordChange = async (data) => {
+    if (data.newPassword !== data.confirmPassword) {
+      toast.error("Passwords do not match!")
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      const response = await updateUserById({
+        password: data.newPassword,
+      })
+      if (response.success) {
+        toast.success("Password updated successfully")
+        reset()
+      } else {
+        toast.error("Failed to update password")
+      }
+    } catch (error) {
+      console.log(error)
     } finally {
       setIsLoading(false)
     }
@@ -365,43 +418,9 @@ const AdminProfileSettings = () => {
 
                   <div className="p-6">
                     <form
-                      onSubmit={handleSubmit(onSubmit)}
+                      onSubmit={handleSubmit(handlePasswordChange)}
                       className="space-y-6"
                     >
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Current Password
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Key size={16} className="text-gray-400" />
-                          </div>
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            {...register("currentPassword", {
-                              required: "Current password is required",
-                            })}
-                            className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                          >
-                            {showPassword ? (
-                              <EyeOff size={18} />
-                            ) : (
-                              <Eye size={18} />
-                            )}
-                          </button>
-                        </div>
-                        {errors.currentPassword && (
-                          <p className="mt-1 text-sm text-red-600">
-                            {errors.currentPassword.message}
-                          </p>
-                        )}
-                      </div>
-
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           New Password

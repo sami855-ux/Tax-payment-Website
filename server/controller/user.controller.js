@@ -938,3 +938,123 @@ export const resetPasswordWithEmailAndPhone = async (req, res) => {
     })
   }
 }
+
+export const getAdminDashboardSummary = async (req, res) => {
+  try {
+    const totalTaxpayers = await User.countDocuments({ role: "taxpayer" })
+    const filings = await TaxFilling.find()
+
+    let totalPaidAmount = 0
+    let pendingTaxFilings = 0
+    let latePaymentAlerts = 0
+    let nextDueDate = null
+
+    const now = new Date()
+
+    // Filing Status counters
+    let filedCount = 0
+    let pendingCount = 0
+    let overdueCount = 0
+
+    // Payments grouped by tax type
+    const paymentsByTypeMap = {}
+
+    // Revenue grouped by month
+    const monthlyRevenueMap = {
+      Jan: 0,
+      Feb: 0,
+      Mar: 0,
+      Apr: 0,
+      May: 0,
+      Jun: 0,
+      Jul: 0,
+      Aug: 0,
+      Sep: 0,
+      Oct: 0,
+      Nov: 0,
+      Dec: 0,
+    }
+
+    for (const filing of filings) {
+      const paidStatuses = ["paid", "partially_paid"]
+      const isPaid = paidStatuses.includes(filing.paymentStatus)
+      const taxCategory = filing.taxCategory || "Other"
+      const paidAmount = filing.calculatedTax || filing.totalAmount || 0
+
+      if (isPaid) {
+        totalPaidAmount += paidAmount
+        filedCount++
+
+        // Group payments by tax type
+        if (!paymentsByTypeMap[taxCategory]) {
+          paymentsByTypeMap[taxCategory] = 0
+        }
+        paymentsByTypeMap[taxCategory] += paidAmount
+
+        // Group revenue by month (using paymentDate or updatedAt)
+        const date = new Date(
+          filing.paymentDate || filing.updatedAt || filing.createdAt
+        )
+        const month = date.toLocaleString("default", { month: "short" }) // "Jan", "Feb", etc.
+        if (monthlyRevenueMap[month] !== undefined) {
+          monthlyRevenueMap[month] += paidAmount
+        }
+      } else {
+        pendingTaxFilings++
+
+        if (filing.isLate === true) {
+          latePaymentAlerts++
+          overdueCount++
+        } else {
+          pendingCount++
+        }
+
+        if (filing.dueDate) {
+          const due = new Date(filing.dueDate)
+          if (due > now && (!nextDueDate || due < nextDueDate)) {
+            nextDueDate = due
+          }
+        }
+      }
+    }
+
+    const UserFilingStatusData = [
+      { name: "Filed", value: filedCount },
+      { name: "Pending", value: pendingCount },
+      { name: "Overdue", value: overdueCount },
+    ]
+
+    const PaymentsByTaxTypeData = Object.entries(paymentsByTypeMap).map(
+      ([taxType, payment]) => ({
+        taxType,
+        payment,
+      })
+    )
+
+    const TaxRevenueData = Object.entries(monthlyRevenueMap).map(
+      ([month, revenue]) => ({
+        month,
+        revenue,
+      })
+    )
+
+    const stats = {
+      totalTaxpayers,
+      totalPaidAmount,
+      pendingTaxFilings,
+      latePaymentAlerts,
+      nextDueDate,
+      UserFilingStatusData,
+      PaymentsByTaxTypeData,
+      TaxRevenueData,
+    }
+
+    return res.json({
+      success: true,
+      stats,
+    })
+  } catch (error) {
+    console.error("Error in admin dashboard summary:", error)
+    return res.status(500).json({ message: "Server Error" })
+  }
+}

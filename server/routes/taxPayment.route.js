@@ -2,6 +2,7 @@ import express from "express"
 import {
   approvePayment,
   createPayment,
+  getAllPaymentsForAdmin,
   getAllPaymentsForUser,
   getPaymentsForOfficial,
 } from "../controller/taxPayment.controller.js"
@@ -25,5 +26,7 @@ router.get("/getall", isAuthenticated, getAllPaymentsForUser)
 router.get("/getassigned-payment", isAuthenticated, getPaymentsForOfficial)
 
 router.put("/approve/:paymentId", isAuthenticated, approvePayment)
+
+router.get("/admin/payments", isAuthenticated, getAllPaymentsForAdmin)
 
 export default router

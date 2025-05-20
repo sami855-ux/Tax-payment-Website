@@ -1,10 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import {
-  createBrowserRouter,
-  redirect,
-  RouterProvider,
-  useNavigate,
-} from "react-router-dom"
+import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { Toaster } from "react-hot-toast"
 
@@ -42,10 +37,6 @@ import Maintenance from "./pages/Admin/Maintenance"
 import PaymentLog from "./pages/Admin/PaymentLog"
 import TaxSetupWizard from "./pages/User/CompleteTax"
 import Reset from "./pages/Reset"
-import axios from "axios"
-import { useEffect } from "react"
-import { useDispatch } from "react-redux"
-import { login, logout } from "./redux/slice/userSlice"
 
 const router = createBrowserRouter([
   {

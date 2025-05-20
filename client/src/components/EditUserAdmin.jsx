@@ -1,6 +1,6 @@
 import { updateUserRole } from "@/services/apiUser"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Loader, Loader2 } from "lucide-react"
+import { Loader2, ChevronDown } from "lucide-react"
 import { useState } from "react"
 
 export default function EditUserAdmin({ user, onCloseModal }) {
@@ -17,53 +17,78 @@ export default function EditUserAdmin({ user, onCloseModal }) {
     },
   })
 
+  const roleOptions = [
+    { value: "taxpayer", label: "Tax Payer" },
+    { value: "official", label: "Tax Official" },
+    { value: "admin", label: "Administrator" },
+  ]
+
   return (
-    <div className="w-[600px] h-[50vh] bg-gray-100 p-7 border border-gray-300 rounded-2xl">
-      <h2 className="font-semibold text-gray-800 pb-6 text-2xl">
-        Assign new role
-      </h2>
+    <div className="w-[500px] bg-white p-8 rounded-xl shadow-lg">
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800">Update User Role</h2>
+          <p className="text-gray-500 mt-1">
+            Assign a new role for {user?.fullName}
+          </p>
+        </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          mutate()
-        }}
-      >
-        <label htmlFor="" className="py-3 block text-[14px] text-gray-800">
-          Select the role
-        </label>
-        <select
-          className="block py-2 border border-gray-300 w-full rounded-md mb-9 px-4"
-          onChange={(e) => {
-            setRole(e.target.value)
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            mutate()
           }}
-          value={role}
+          className="space-y-6"
         >
-          <option value="taxpayer">Tax payer</option>
-          <option value="official">Official</option>
-          <option value="admin">Admin</option>
-        </select>
-
-        <button
-          className="py-1 px-9 border border-red-200 rounded-lg text-white cursor-pointer bg-red-400 mr-7"
-          onClick={onCloseModal}
-        >
-          Cancel
-        </button>
-        <button
-          className="py-1 px-10 bg-blue-500 hover:bg-blue-400 text-white rounded-lg cursor-pointer"
-          type="submit"
-        >
-          {isLoading ? (
-            <div className="flex items-center gap-1.5">
-              {" "}
-              <Loader className="animate-spin"></Loader> ...Changing Role
+          <div>
+            <label
+              htmlFor="role-select"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Select Role
+            </label>
+            <div className="relative">
+              <select
+                id="role-select"
+                className="appearance-none w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                onChange={(e) => setRole(e.target.value)}
+                value={role}
+              >
+                {roleOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="h-5 w-5 text-gray-400 absolute right-3 top-3 pointer-events-none" />
             </div>
-          ) : (
-            "Change Role"
-          )}
-        </button>
-      </form>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onCloseModal}
+              className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Updating...
+                </>
+              ) : (
+                "Update Role"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

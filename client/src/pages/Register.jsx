@@ -78,10 +78,10 @@ export default function Register() {
         <motion.section
           initial={{ x: -50 }}
           animate={{ x: 0 }}
-          className="w-full lg:w-1/2 p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 bg-white overflow-y-auto"
+          className="w-full lg:w-1/2 p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 bg-white overflow-y-auto none_scroll"
           style={{ height: "100vh" }}
         >
-          <div className="max-w-lg mx-auto h-full flex flex-col">
+          <div className="max-w-lg mx-auto h-full flex flex-col ">
             <div className="flex items-center mb-6">
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -343,7 +343,7 @@ export default function Register() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   type="reset"
-                  className="px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm sm:text-base"
+                  className="px-7 py-1 border cursor-pointer border-gray-300 rounded-md font-medium hover:bg-gray-50 transition-colors text-sm sm:text-base"
                 >
                   Cancel
                 </motion.button>
@@ -352,7 +352,7 @@ export default function Register() {
                   whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-7 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-colors disabled:opacity-70 text-sm sm:text-base"
+                  className="px-7 py-1 bg-gradient-to-r cursor-pointer from-blue-600 to-indigo-600 text-white rounded-md font-medium hover:from-blue-700 hover:to-indigo-700 transition-colors disabled:opacity-70 text-sm sm:text-base"
                 >
                   {isSubmitting ? (
                     <span className="flex items-center justify-center gap-2">

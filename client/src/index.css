@@ -75,3 +75,6 @@ a.activeItem {
 .nav-item.active::before {
   background-color: #1d4ed8; /* blue-700 */
 }
+.none_scroll::-webkit-scrollbar {
+  display: none;
+}

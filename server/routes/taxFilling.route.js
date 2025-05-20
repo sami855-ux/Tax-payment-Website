@@ -6,6 +6,7 @@ import {
   getApprovedTaxFilingsForUser,
   getPendingTaxFilingsForUser,
   getRecentActivityFeed,
+  getRecentTaxFilingTableData,
   getTaxPaymentTrends,
   getTaxTimelineData,
   reviewTaxFiling,
@@ -29,5 +30,6 @@ router.get("/getPaymentTrend", isAuthenticated, getTaxPaymentTrends)
 router.get("/pending", isAuthenticated, getPendingTaxFilingsForUser)
 router.get("/timeline", isAuthenticated, getTaxTimelineData)
 router.get("/dashboard/activity-feed", getRecentActivityFeed)
+router.get("/adminDashboard", isAuthenticated, getRecentTaxFilingTableData)
 
 export default router

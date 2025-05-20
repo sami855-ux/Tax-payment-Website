@@ -7,7 +7,7 @@ export const registerValidation = [
     .normalizeEmail(),
 
   check("password")
-    .isLength({ min: 2 })
+    .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters long")
     .matches(/\d/)
     .withMessage("Password must contain at least one number")
@@ -15,7 +15,7 @@ export const registerValidation = [
     .withMessage("Password must contain at least one letter"),
 
   check("fullName")
-    .isLength({ min: 2 })
+    .isLength({ min: 4 })
     .withMessage("Full Name must be at least 2 characters long")
     .trim()
     .escape(),
@@ -23,14 +23,12 @@ export const registerValidation = [
   check("phoneNumber")
     .isMobilePhone()
     .withMessage("Please provide a valid phone number")
-    .isLength({ min: 10, max: 10 })
+    .isLength({ min: 9, max: 9 })
     .withMessage("Phone number should be exactly 10 digits"),
 
   check("taxId")
     .isLength({ min: 10, max: 10 })
-    .withMessage("Tax ID must be 10 digits long")
-    .isNumeric()
-    .withMessage("Tax ID must be numeric"),
+    .withMessage("Tax ID must be 10 digits long"),
 
   check("gender")
     .optional()
@@ -46,9 +44,4 @@ export const registerValidation = [
     .optional()
     .isLength({ min: 3 })
     .withMessage("Wereda must be at least 3 characters long"),
-
-  check("role")
-    .optional()
-    .isIn(["taxpayer", "admin"])
-    .withMessage("Role must be either taxpayer or admin"),
 ]

@@ -5,6 +5,7 @@ import {
   changeUserRole,
   completeTaxSetup,
   deleteTaxpayer,
+  getAdminDashboardSummary,
   getAllOfficials,
   getAllUser,
   getOfficialDashboardStats,
@@ -30,7 +31,11 @@ const router = express.Router()
 router.get("/dashboard", isAuthenticated, getOfficialDashboardStats)
 //! assign official to taxpayer => Admin
 router.patch("/assign", isAuthenticated, assignOfficialToTaxpayer)
-
+router.get(
+  "/admin/dashboard-summary",
+  isAuthenticated,
+  getAdminDashboardSummary
+)
 router.patch("/:taxpayerId/increase-notice", increaseNoticesSent)
 
 router.get("/official", getAllOfficials)
