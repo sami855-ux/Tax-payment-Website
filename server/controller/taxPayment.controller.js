@@ -10,175 +10,178 @@ import { v4 as uuidv4 } from "uuid"
 import mongoose from "mongoose"
 
 const createPayment = async (req, res) => {
-  const session = await mongoose.startSession()
-  session.startTransaction()
+  const MAX_RETRIES = 5
+  let retryCount = 0
 
-  try {
-    const {
-      taxFilingId,
-      amount,
-      paymentType,
-      method,
-      dueDate,
-      phoneNumber,
-      bankName,
-      senderName,
-      bankNumber,
-      payAmount,
-    } = req.body
+  while (retryCount < MAX_RETRIES) {
+    const session = await mongoose.startSession()
+    try {
+      session.startTransaction()
 
-    const paymentReceiptImage = req.file || null
+      // all your logic here: extract body, upload image, validate, etc.
+      // up to await session.commitTransaction()
 
-    const referenceId = uuidv4()
+      const {
+        taxFilingId,
+        amount,
+        paymentType,
+        method,
+        dueDate,
+        phoneNumber,
+        bankName,
+        senderName,
+        bankNumber,
+        payAmount,
+      } = req.body
 
-    // Check if the tax filing exists
-    const taxFiling = await TaxFiling.findById(taxFilingId)
+      const paymentReceiptImage = req.file || null
+      const referenceId = uuidv4()
 
-    if (!taxFiling) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Tax filing not found." })
-    }
-    if (!paymentReceiptImage) {
-      return res.status(400).json({
-        error: "paymentReceiptImage image is required",
-        success: false,
+      const taxFiling = await TaxFiling.findById(taxFilingId).session(session)
+      if (!taxFiling) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Tax filing not found." })
+      }
+
+      if (!paymentReceiptImage) {
+        return res
+          .status(400)
+          .json({ error: "paymentReceiptImage is required", success: false })
+      }
+
+      const optimizedImageBuffer = await sharp(paymentReceiptImage.buffer)
+        .resize({ width: 1000, height: 1000, fit: "inside" })
+        .toFormat("jpeg", { quality: 80 })
+        .toBuffer()
+
+      const fileUri = `data:image/jpeg;base64,${optimizedImageBuffer.toString(
+        "base64"
+      )}`
+
+      const cloudResponse = await cloudinary.uploader.upload(fileUri, {
+        folder: "resumes",
+        resource_type: "image",
+        timestamp: Math.floor(Date.now() / 1000),
       })
-    }
-    const optimizedImageBuffer = await sharp(paymentReceiptImage.buffer)
-      .resize({ width: 1000, height: 1000, fit: "inside" })
-      .toFormat("jpeg", { quality: 80 })
-      .toBuffer()
 
-    const fileUri = `data:image/jpeg;base64,${optimizedImageBuffer.toString(
-      "base64"
-    )}`
+      if (!cloudResponse?.secure_url) {
+        return res
+          .status(500)
+          .json({ error: "Failed to upload receipt image", success: false })
+      }
 
-    // Upload to Cloudinary
-    const cloudResponse = await cloudinary.uploader.upload(fileUri, {
-      folder: "resumes",
-      resource_type: "image",
-      timestamp: Math.floor(Date.now() / 1000),
-    })
+      if (
+        (method === "telebirr" || method === "Mobile Money") &&
+        !phoneNumber
+      ) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Phone number is required" })
+      }
+      if (
+        method === "Bank Transfer" &&
+        (!bankName || !senderName || !bankNumber)
+      ) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Bank details required" })
+      }
 
-    if (!cloudResponse || !cloudResponse.secure_url) {
+      const payment = new Payment({
+        taxpayer: taxFiling.taxpayer,
+        taxCategory: taxFiling.taxCategory,
+        amount,
+        dueDate,
+        paymentType,
+        method,
+        referenceId,
+        taxFiling: taxFilingId,
+        phoneNumber,
+        bankName,
+        senderName,
+        bankNumber,
+        paymentReceiptImage: cloudResponse.secure_url,
+      })
+
+      if (paymentType === "full") {
+        payment.remainingAmount = 0
+      } else if (paymentType === "partial") {
+        payment.remainingAmount = payAmount > amount ? 0 : amount - payAmount
+      }
+
+      await payment.save({ session })
+      taxFiling.taxPayments.push(payment._id)
+      await taxFiling.save({ session })
+
+      await updateTaxFilingStatus(taxFilingId, session)
+
+      const [transaction] = await Transaction.create(
+        [
+          {
+            user: taxFiling.taxpayer,
+            relatedPayment: payment._id,
+            type: "debit",
+            purpose: "tax_payment",
+            amount,
+            status: "success",
+            method,
+            timestamp: new Date(),
+            note: `Payment for ${taxFiling.taxCategory} tax`,
+          },
+        ],
+        { session }
+      )
+
+      await transaction.save({ session })
+      await session.commitTransaction()
+      session.endSession()
+
+      await Notification.create({
+        recipient: taxFiling.taxpayer,
+        recipientModel: "taxpayer",
+        type: "success",
+        message: `Your ${taxFiling.taxCategory} tax with the amount of ${amount} birr is paid successfully.`,
+      })
+
       return res
-        .status(500)
-        .json({ error: "Failed to upload resume image", success: false })
-    }
+        .status(201)
+        .json({ success: true, payment, message: "Payment success" })
+    } catch (error) {
+      await session.abortTransaction()
+      session.endSession()
 
-    // Validate conditional fields based on the payment method
-    if (method === "telebirr" || method === "Mobile Money") {
-      if (!phoneNumber) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Phone number is required for telebirr or Mobile Money payments.",
-        })
-      }
-      if (!paymentReceiptImage) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Payment receipt image is required for telebirr or Mobile Money payments.",
-        })
-      }
-    } else if (method === "Bank Transfer") {
-      if (!bankName || !senderName || !bankNumber) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Bank details (bankName, senderName, bankNumber) are required for Bank Transfer.",
-        })
-      }
-      if (!paymentReceiptImage) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Payment receipt image is required for telebirr or Mobile Money payments.",
-        })
+      if (
+        error.codeName === "WriteConflict" ||
+        error.errorLabels?.includes("TransientTransactionError")
+      ) {
+        retryCount++
+        console.warn(
+          `Retrying transaction due to write conflict... (${retryCount}/${MAX_RETRIES})`
+        )
+      } else {
+        console.error("Error creating payment:", error)
+        return res
+          .status(500)
+          .json({ success: false, message: "Error processing payment." })
       }
     }
-
-    // Create a new payment entry
-    const payment = new Payment({
-      taxpayer: taxFiling.taxpayer,
-      taxCategory: taxFiling.taxCategory,
-      amount,
-      dueDate,
-      paymentType,
-      method,
-      referenceId,
-      taxFiling: taxFilingId,
-      phoneNumber,
-      bankName,
-      senderName,
-      bankNumber,
-      paymentReceiptImage: cloudResponse?.secure_url,
-    })
-
-    if (paymentType === "full") {
-      payment.remainingAmount = 0
-    }
-    // For partial payments, track the remaining amount
-    if (paymentType === "partial") {
-      payment.remainingAmount = payAmount > amount ? 0 : amount - payAmount // The user will pay part of the total
-    }
-
-    await payment.save({ session })
-
-    // Optionally, update the tax filing with the new payment reference
-    taxFiling.taxPayments.push(payment._id)
-    await taxFiling.save()
-
-    // Update tax filing payment status based on the total paid
-    await updateTaxFilingStatus(taxFilingId)
-
-    const [transaction] = await Transaction.create(
-      [
-        {
-          user: taxFiling.taxpayer,
-          relatedPayment: payment._id,
-          type: "debit",
-          purpose: "tax_payment",
-          amount,
-          status: "success",
-          method: method,
-          timestamp: new Date(),
-          note: `Payment for ${taxFiling.taxCategory} tax`,
-        },
-      ],
-      { session }
-    )
-
-    await transaction.save({ session })
-
-    await session.commitTransaction()
-    session.endSession()
-
-    await Notification.create({
-      recipient: taxFiling.taxpayer,
-      recipientModel: "taxpayer",
-      type: "success",
-      message: `Your ${taxFiling.taxCategory} tax with the amount of ${amount} birr is payed successfully, Wait for approval from your tax official`,
-    })
-
-    return res
-      .status(201)
-      .json({ success: true, payment, message: "Payment success" })
-  } catch (error) {
-    console.error("Error creating payment:", error)
-    return res
-      .status(500)
-      .json({ success: false, message: "Error processing payment." })
   }
+
+  return res.status(500).json({
+    success: false,
+    message: "Payment failed after multiple retries due to write conflicts.",
+  })
 }
 
 // Update the payment status based on the amount paid
-const updateTaxFilingStatus = async (taxFilingId) => {
-  const taxFiling = await TaxFiling.findById(taxFilingId).populate(
-    "taxPayments"
-  )
+const updateTaxFilingStatus = async (taxFilingId, session) => {
+  const taxFiling = await TaxFiling.findById(taxFilingId)
+    .populate({
+      path: "taxPayments",
+      options: { session },
+    })
+    .session(session)
 
   if (!taxFiling) {
     throw new Error("Tax filing not found.")
