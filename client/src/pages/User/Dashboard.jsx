@@ -83,7 +83,11 @@ export default function UserDashboard() {
           ) : (
             <>
               <p className="text-3xl font-semibold text-white">
-                {totalTax} birr
+                {new Intl.NumberFormat("en-ET", {
+                  style: "currency",
+                  currency: "ETB",
+                  minimumFractionDigits: 2,
+                }).format(totalTax)}
               </p>
               <p className="text-sm text-gray-200 py-6 flex items-center gap-1">
                 <FaArrowUp color="white" />

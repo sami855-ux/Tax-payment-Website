@@ -1,6 +1,8 @@
 // AdminDashboardUI.jsx
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
+import { HeatmapGrid } from "react-heatmap-grid"
+import { format, parseISO } from "date-fns"
 import {
   BarChart4,
   CalendarDays,
@@ -8,11 +10,55 @@ import {
   Users,
   Download,
   FileText,
-  PieChart,
+  // PieChart,
 } from "lucide-react"
+import useAdminDashboardStats from "@/context/useAdminDashbaordStats"
+import Spinner from "@/ui/Spinner"
+import { useQuery } from "@tanstack/react-query"
+import { getMonthlyTrends } from "@/services/Tax"
+import {
+  PieChart,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Pie,
+  Cell,
+} from "recharts"
 
 export default function AdminDashboardUI() {
   const [selectedFilter, setSelectedFilter] = useState("This Month")
+  const { data, isLoading } = useAdminDashboardStats()
+  const { data: report, isLoading: reportLoading } = useQuery({
+    queryKey: ["report"],
+    queryFn: getMonthlyTrends,
+  })
+
+  const filingData = {
+    category: "personal",
+    total: 10,
+    statuses: [
+      { status: "approved", count: 5 },
+      { status: "submitted", count: 3 },
+      { status: "pending", count: 2 },
+    ],
+  }
+
+  // Transform the data for the chart
+  const chartData = filingData.statuses.map((item) => ({
+    name: item.status.charAt(0).toUpperCase() + item.status.slice(1),
+    value: item.count,
+    color:
+      item.status === "approved"
+        ? "#10B981"
+        : item.status === "submitted"
+        ? "#3B82F6"
+        : "#F59E0B",
+  }))
 
   useEffect(() => {
     document.title = "Report and analytics "
@@ -35,6 +81,8 @@ export default function AdminDashboardUI() {
     </motion.div>
   )
 
+  if (isLoading || reportLoading) return <Spinner />
+
   return (
     <div className="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen p-8">
       <motion.div
@@ -56,17 +104,81 @@ export default function AdminDashboardUI() {
           Revenue Summary
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card title="Total Collected" value="ETB 4.2M" icon={<BarChart4 />} />
-          <Card title="This Month" value="ETB 350K" icon={<CalendarDays />} />
-          <Card title="Pending Payments" value="ETB 120K" icon={<Clock4 />} />
-          <Card title="Active Users" value="1,245" icon={<Users />} />
+          <Card
+            title="Total Collected"
+            value={new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: "ETB",
+            }).format(data?.totalPaidAmount)}
+            icon={<BarChart4 />}
+          />
+          <Card
+            title="Pending Payments"
+            value={data?.pendingTaxFilings}
+            icon={<Clock4 />}
+          />
+          <Card
+            title="Active Users"
+            value={data?.totalTaxpayers}
+            icon={<Users />}
+          />
         </div>
         <div className="mt-6 p-6 rounded-2xl bg-white shadow-md border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-700 mb-4">
             Monthly Collection Trend
           </h3>
-          <div className="w-full h-56 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-            [Insert Chart.js or Recharts Line Chart Here]
+          <div className="w-full h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={[
+                  { month: "1/2025", totalCollected: 12000 },
+                  { month: "2/2025", totalCollected: 18500 },
+                  { month: "3/2025", totalCollected: 16200 },
+                  { month: "4/2025", totalCollected: 20150 },
+                  { month: "5/2025", totalCollected: 17400 },
+                ]}
+                margin={{
+                  top: 5,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fill: "#6b7280" }}
+                  tickMargin={10}
+                />
+                <YAxis
+                  tick={{ fill: "#6b7280" }}
+                  tickFormatter={(value) => `${value.toLocaleString()}`}
+                />
+                <Tooltip
+                  formatter={(value) => [
+                    `${value.toLocaleString()}`,
+                    "Total Collected",
+                  ]}
+                  labelFormatter={(label) => `Month: ${label}`}
+                  contentStyle={{
+                    backgroundColor: "#fff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "0.5rem",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="totalCollected"
+                  name="Total Collected"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6, stroke: "#1d4ed8", strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </section>
@@ -126,39 +238,50 @@ export default function AdminDashboardUI() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
             <h3 className="mb-4 font-medium text-gray-700">
-              Filing Distribution
+              Filing Distribution ({filingData.category})
             </h3>
-            <div className="h-52 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-              [Donut Chart Here]
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
-            <h3 className="mb-4 font-medium text-gray-700">Filing Calendar</h3>
-            <div className="h-52 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-              [Heatmap/Calendar Chart Here]
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Category Revenue & Penalties */}
-      <section className="mb-12">
-        <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-          Revenue & Penalties
-        </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
-            <h3 className="mb-4 font-medium text-gray-700">Category Revenue</h3>
-            <div className="h-52 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-              [Grouped Bar Chart Here]
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
-            <h3 className="mb-4 font-medium text-gray-700">
-              Penalties Collected
-            </h3>
-            <div className="h-52 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-              [Bar Chart or Table Here]
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={({ name, percent }) =>
+                      `${name}: ${(percent * 100).toFixed(0)}%`
+                    }
+                    labelLine={false}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value, name, props) => [
+                      value,
+                      `${name}: ${((props.payload.percent || 0) * 100).toFixed(
+                        1
+                      )}%`,
+                    ]}
+                    contentStyle={{
+                      backgroundColor: "#fff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "0.5rem",
+                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                    }}
+                  />
+                  <Legend
+                    layout="horizontal"
+                    verticalAlign="bottom"
+                    align="center"
+                    wrapperStyle={{ paddingTop: "20px" }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>

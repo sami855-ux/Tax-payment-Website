@@ -476,3 +476,21 @@ export const getAllPaymentsForAdmin = async () => {
     throw error
   }
 }
+export const getMonthlyTrends = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/api/filling/dashboard/monthly-trend`,
+      {
+        withCredentials: true,
+      }
+    )
+
+    return response.data.report
+  } catch (error) {
+    console.error(
+      "Error fetching dashboard stats:",
+      error.response?.data || error
+    )
+    throw error
+  }
+}

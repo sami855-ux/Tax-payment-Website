@@ -27,7 +27,7 @@ const paymentSchema = new mongoose.Schema(
     },
     paymentDate: {
       type: Date,
-      default: null, // updated when payment is made
+      default: null,
     },
     method: {
       type: String,

@@ -15,7 +15,7 @@ import { isAuthenticated } from "../controller/user.controller.js"
 
 const router = express.Router()
 
-router.get("/download", async (req, res) => {
+router.get("/download", isAuthenticated, async (req, res) => {
   try {
     // Step 1: Create a backups directory if it doesn't exist
     const backupDir = path.join(process.cwd(), "backups")
@@ -54,6 +54,12 @@ router.get("/download", async (req, res) => {
 
     input.pipe(gzip).pipe(output)
 
+    await Notification.create({
+      recipient: req.userId,
+      recipientModel: "admin",
+      type: "info",
+      message: "Backup completed successfully",
+    })
     output.on("finish", () => {
       // Step 5: Delete raw JSON after compression
       fs.unlinkSync(rawFilePath)
@@ -91,49 +97,60 @@ const upload = multer({
   },
 })
 
-router.post("/restore", upload.single("backup"), async (req, res) => {
-  try {
-    const uploadedPath = req.file.path
-    const uncompressedPath = `${uploadedPath}.json`
+router.post(
+  "/restore",
+  upload.single("backup"),
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      const uploadedPath = req.file.path
+      const uncompressedPath = `${uploadedPath}.json`
 
-    // Unzip the file
-    const unzip = zlib.createGunzip()
-    const input = fs.createReadStream(uploadedPath)
-    const output = fs.createWriteStream(uncompressedPath)
+      // Unzip the file
+      const unzip = zlib.createGunzip()
+      const input = fs.createReadStream(uploadedPath)
+      const output = fs.createWriteStream(uncompressedPath)
 
-    input.pipe(unzip).pipe(output)
+      input.pipe(unzip).pipe(output)
 
-    output.on("finish", async () => {
-      const raw = fs.readFileSync(uncompressedPath, "utf8")
-      const data = JSON.parse(raw)
+      output.on("finish", async () => {
+        const raw = fs.readFileSync(uncompressedPath, "utf8")
+        const data = JSON.parse(raw)
 
-      // Optional: Clear collections first or merge intelligently
-      await Promise.all([
-        User.deleteMany({}),
-        TaxFilling.deleteMany({}),
-        Notification.deleteMany({}),
-        Payment.deleteMany({}),
-        TaxRule.deleteMany({}),
-        TaxSchedule.deleteMany({}),
-      ])
+        await Promise.all([
+          User.deleteMany({}),
+          TaxFilling.deleteMany({}),
+          Notification.deleteMany({}),
+          Payment.deleteMany({}),
+          TaxRule.deleteMany({}),
+          TaxSchedule.deleteMany({}),
+        ])
 
-      await User.insertMany(data.users)
-      await TaxFilling.insertMany(data.taxFilings)
-      await Notification.insertMany(data.notification)
-      await Payment.insertMany(data.taxPayment)
-      await TaxRule.insertMany(data.taxRule)
-      await TaxSchedule.insertMany(data.taxSchedule)
+        await User.insertMany(data.users)
+        await TaxFilling.insertMany(data.taxFilings)
+        await Notification.insertMany(data.notification)
+        await Payment.insertMany(data.taxPayment)
+        await TaxRule.insertMany(data.taxRule)
+        await TaxSchedule.insertMany(data.taxSchedule)
 
-      fs.unlinkSync(uploadedPath)
-      fs.unlinkSync(uncompressedPath)
+        fs.unlinkSync(uploadedPath)
+        fs.unlinkSync(uncompressedPath)
 
-      res.json({ success: true, message: "Database restored successfully!" })
-    })
-  } catch (err) {
-    console.error("❌ Restore failed:", err)
-    res.status(500).json({ success: false, message: "Restore failed." })
+        await Notification.create({
+          recipient: req.userId,
+          recipientModel: "admin",
+          type: "info",
+          message: "Restore completed successfully",
+        })
+
+        res.json({ success: true, message: "Database restored successfully!" })
+      })
+    } catch (err) {
+      console.error("Restore failed:", err)
+      res.status(500).json({ success: false, message: "Restore failed." })
+    }
   }
-})
+)
 router.post("/backup-frequency", isAuthenticated, async (req, res) => {
   const { frequency } = req.body
   try {

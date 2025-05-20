@@ -12,6 +12,7 @@ import {
   reviewTaxFiling,
 } from "../controller/taxFilling.controller.js"
 import upload from "../config/multer.js"
+import { getMonthlyTrends } from "../controller/taxPayment.controller.js"
 
 const router = express.Router()
 
@@ -31,5 +32,6 @@ router.get("/pending", isAuthenticated, getPendingTaxFilingsForUser)
 router.get("/timeline", isAuthenticated, getTaxTimelineData)
 router.get("/dashboard/activity-feed", getRecentActivityFeed)
 router.get("/adminDashboard", isAuthenticated, getRecentTaxFilingTableData)
+router.get("/dashboard/monthly-trend", isAuthenticated, getMonthlyTrends)
 
 export default router

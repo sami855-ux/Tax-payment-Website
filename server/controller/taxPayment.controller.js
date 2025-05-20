@@ -358,4 +358,115 @@ export const getAllPaymentsForAdmin = async (req, res) => {
   }
 }
 
+// GET /api/dashboard/monthly-trend
+export const getMonthlyTrends = async (req, res) => {
+  try {
+    // 1. Monthly Collection Trend (by Payment Date)
+    const monthlyCollections = await Payment.aggregate([
+      {
+        $match: {
+          paymentDate: { $ne: null },
+          status: "Paid",
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$paymentDate" },
+            month: { $month: "$paymentDate" },
+          },
+          totalCollected: { $sum: "$amount" },
+        },
+      },
+      {
+        $sort: {
+          "_id.year": 1,
+          "_id.month": 1,
+        },
+      },
+      {
+        $project: {
+          month: {
+            $concat: [
+              { $toString: "$_id.month" },
+              "/",
+              { $toString: "$_id.year" },
+            ],
+          },
+          totalCollected: 1,
+          _id: 0,
+        },
+      },
+    ])
+
+    // 2. Filing Distribution (group by category & status)
+    const filingDistribution = await TaxFiling.aggregate([
+      {
+        $group: {
+          _id: { taxCategory: "$taxCategory", status: "$status" },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $group: {
+          _id: "$_id.taxCategory",
+          statuses: {
+            $push: {
+              status: "$_id.status",
+              count: "$count",
+            },
+          },
+          total: { $sum: "$count" },
+        },
+      },
+      {
+        $project: {
+          category: "$_id",
+          statuses: 1,
+          total: 1,
+          _id: 0,
+        },
+      },
+    ])
+
+    // 3. Filing Calendar (group by filingDate)
+    const filingCalendar = await TaxFiling.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: "$filingDate" },
+            month: { $month: "$filingDate" },
+            day: { $dayOfMonth: "$filingDate" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          date: {
+            $dateFromParts: {
+              year: "$_id.year",
+              month: "$_id.month",
+              day: "$_id.day",
+            },
+          },
+          count: 1,
+          _id: 0,
+        },
+      },
+      { $sort: { date: 1 } },
+    ])
+
+    const report = { monthlyCollections, filingDistribution, filingCalendar }
+
+    res.json({
+      success: true,
+      report,
+    })
+  } catch (err) {
+    console.error("Error generating trends:", err)
+    res.status(500).json({ success: false, message: "Failed to get trends" })
+  }
+}
+
 export { createPayment }

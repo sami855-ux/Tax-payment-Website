@@ -156,7 +156,11 @@ export default function OfficialDashboard() {
       >
         <Card
           title="Total Tax Collected"
-          value={`ETB ${data.totalTaxCollected}`}
+          value={new Intl.NumberFormat("en-ET", {
+            style: "currency",
+            currency: "ETB",
+            minimumFractionDigits: 2,
+          }).format(data.totalTaxCollected)}
           icon={<FiDollarSign size={30} />}
         />
         <Card

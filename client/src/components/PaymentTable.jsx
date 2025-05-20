@@ -44,9 +44,9 @@ const PaymentTable = ({ data, onVerify, onView, onSendReminder }) => {
         accessor: "amount",
         Cell: ({ value }) => (
           <span className="font-medium">
-            {new Intl.NumberFormat("en-US", {
+            {new Intl.NumberFormat("en-Et", {
               style: "currency",
-              currency: "USD",
+              currency: "ETB",
             }).format(value)}
           </span>
         ),

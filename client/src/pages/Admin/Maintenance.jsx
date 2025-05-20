@@ -12,6 +12,8 @@ import {
   FiServer,
   FiHardDrive,
 } from "react-icons/fi"
+import axios from "axios"
+import toast from "react-hot-toast"
 
 const Maintenance = () => {
   const [activeTab, setActiveTab] = useState("backup")
@@ -23,6 +25,7 @@ const Maintenance = () => {
   const [restoreFile, setRestoreFile] = useState(null)
   const [schedule, setSchedule] = useState("daily")
   const [logs, setLogs] = useState([])
+  const [isRestoring, setIsRestoring] = useState(false)
   const [systemHealth, setSystemHealth] = useState({
     mongoDB: "healthy",
     api: "healthy",
@@ -63,22 +66,97 @@ const Maintenance = () => {
     ])
   }, [])
 
-  const handleBackup = () => {
+  const handleFileChange = (e) => {
+    setRestoreFile(e.target.files[0])
+  }
+
+  const handleBackup = async () => {
     setBackupStatus((prev) => ({ ...prev, inProgress: true }))
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/api/backup/download`,
+        {
+          responseType: "blob",
+        }
+      )
+
+      const blob = new Blob([res.data], { type: "application/gzip" })
+      const url = window.URL.createObjectURL(blob)
+
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `backup-${new Date().toISOString()}.gz`
+      a.click()
+
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      toast.error("Backup failed. Please check the server logs.")
+    } finally {
       setBackupStatus({
         lastBackup: new Date().toISOString(),
         size: "2.5 GB",
         inProgress: false,
       })
-    }, 2000)
+    }
   }
 
-  const handleRestore = () => {
-    if (!restoreFile) return
-    // Add restore logic here
-    alert(`Restoring from ${restoreFile.name}`)
+  const handleRestore = async () => {
+    if (!restoreFile) {
+      alert("Please select a backup file first!")
+      return
+    }
+
+    const formData = new FormData()
+    formData.append("backup", restoreFile)
+
+    try {
+      setIsRestoring(true)
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/api/backup/restore`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          timeout: 5 * 60 * 1000, // 5 min timeout for big restores
+        }
+      )
+
+      toast.success("Restore successful!")
+    } catch (error) {
+      console.error("Restore failed:", error)
+      toast.error("Restore failed. Check server logs.")
+    } finally {
+      setIsRestoring(false)
+      setRestoreFile(null)
+    }
+  }
+
+  const handleSaveSchedule = async () => {
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/api/backup/backup-frequency`,
+        { frequency: schedule },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
+
+      if (res.data.success) {
+        toast.success(
+          ` Backup frequency updated. Next backup: ${new Date(
+            res.data.nextBackup
+          ).toLocaleString()}`
+        )
+      } else {
+        toast.error(" Failed to update backup frequency.")
+      }
+    } catch (err) {
+      console.error("Error updating backup frequency", err)
+      toast.error(" Error updating backup frequency. ")
+    }
   }
 
   return (
@@ -98,8 +176,6 @@ const Maintenance = () => {
             { id: "backup", label: "Manual Backup" },
             { id: "restore", label: "Restore Backup" },
             { id: "schedule", label: "Auto Backup" },
-            { id: "logs", label: "System Logs" },
-            { id: "health", label: "System Health" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -231,8 +307,8 @@ const Maintenance = () => {
                   </p>
                   <input
                     type="file"
-                    onChange={(e) => setRestoreFile(e.target.files[0])}
-                    accept=".bson,.gz"
+                    onChange={handleFileChange}
+                    accept=".gz"
                     className="hidden"
                     id="backup-upload"
                   />
@@ -270,7 +346,10 @@ const Maintenance = () => {
                 } text-white`}
               >
                 <FiAlertCircle />
-                <span>Restore Now</span>
+                <span className="px-4">
+                  {" "}
+                  {isRestoring ? "Restoring..." : "Restore Backup"}
+                </span>
               </motion.button>
 
               <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
@@ -322,7 +401,6 @@ const Maintenance = () => {
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>
                     <option value="monthly">Monthly</option>
-                    <option value="custom">Custom</option>
                   </select>
                 </div>
 
@@ -340,6 +418,7 @@ const Maintenance = () => {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={handleSaveSchedule}
                 className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium text-white"
               >
                 Save Schedule
