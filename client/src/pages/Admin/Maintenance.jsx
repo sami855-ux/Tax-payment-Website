@@ -76,7 +76,9 @@ const Maintenance = () => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_BASE_URL}/api/backup/download`,
+
         {
+          widthCredentials: true,
           responseType: "blob",
         }
       )
@@ -118,6 +120,7 @@ const Maintenance = () => {
         {
           headers: { "Content-Type": "multipart/form-data" },
           timeout: 5 * 60 * 1000, // 5 min timeout for big restores
+          withCredentials: true,
         }
       )
 
