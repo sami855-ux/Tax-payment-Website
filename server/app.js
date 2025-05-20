@@ -9,11 +9,12 @@ import taxScheduleRoutes from "./routes/TaxSchedule.route.js"
 import taxFillingRoutes from "./routes/taxFilling.route.js"
 import sendEmailRoute from "./routes/sendEmail.route.js"
 import paymentRoutes from "./routes/taxPayment.route.js"
+import { getMe } from "./controller/user.controller.js"
 import taxRuleRoutes from "./routes/TaxRule.route.js"
 import exportRoutes from "./routes/export.route.js"
+import backupRoutes from "./routes/backup.route.js"
 import userRoutes from "./routes/user.route.js"
 import connectDB from "./config/db.js"
-import { getMe } from "./controller/user.controller.js"
 
 const app = express()
 
@@ -49,6 +50,7 @@ app.get("/api/auth", getMe)
 app.use("/api/user", userRoutes)
 app.use("/api/rule", taxRuleRoutes)
 app.use("/api/export", exportRoutes)
+app.use("/api/backup", backupRoutes)
 app.use("/api/email", sendEmailRoute)
 app.use("/api/payment", paymentRoutes)
 app.use("/api/filling", taxFillingRoutes)

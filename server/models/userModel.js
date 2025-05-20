@@ -97,6 +97,14 @@ const UserSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    backupSettings: {
+      frequency: {
+        type: String,
+        enum: ["daily", "weekly", "monthly"],
+        default: "weekly",
+      },
+      nextBackup: { type: Date },
+    },
   },
   { timestamps: true }
 )
