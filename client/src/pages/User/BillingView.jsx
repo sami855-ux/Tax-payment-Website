@@ -1,22 +1,20 @@
-"use client"
-
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { FileText, CreditCard, User, Home, Mail, Phone } from "lucide-react"
 
 export default function BillingReceiptPreview() {
   const [billingDetails] = useState({
-    name: "John Doe",
-    address: "123 Main St, Cityville, CA 90001",
-    email: "johndoe@example.com",
-    phone: "+1 234 567 8901",
+    name: "Bantelay D.",
+    address: "mengetaya, debre brihan, ethiopia",
+    email: "bantelay@gmail.com",
+    phone: "+251 9999 999",
   })
 
   const [receiptDetails] = useState({
     taxType: "Income Tax",
     period: "January - March 2025",
-    amount: "$1,200.00",
-    paymentMethod: "Credit Card (Visa **** 4242)",
+    amount: "birr 1,200.00",
+    paymentMethod: "Telebirr",
     transactionDate: "April 26, 2025",
     receiptNumber: "TXP-20250426-001",
   })
@@ -35,10 +33,9 @@ export default function BillingReceiptPreview() {
         transition={{ delay: 0.2 }}
         className="flex flex-col"
       >
-        <div className="p-3 mb-3 bg-blue-50 rounded-full">
-          <FileText className="w-6 h-6 text-blue-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-800">Billing & Receipt</h2>
+        <h2 className="text-2xl font-bold text-gray-800">
+          Billing & Receipt Example
+        </h2>
         <p className="text-gray-500">Transaction summary</p>
       </motion.div>
 
