@@ -417,7 +417,7 @@ function CreateTaxRule({
           <div className="mb-4">
             <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
               <FileText size={20} />{" "}
-              <span className="font-semibold text-gray-800">Name</span>
+              <span className="font-semibold text-gray-800">Tax Name</span>
             </label>
             <motion.input
               type="text"
