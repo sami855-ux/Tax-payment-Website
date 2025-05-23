@@ -19,7 +19,7 @@ import toast from "react-hot-toast"
 import { logout } from "@/redux/slice/userSlice"
 import { logoutUser } from "@/services/apiUser"
 import DashboardLink from "@/ui/DashboardLink"
-import hero from "@/assets/logo.png"
+import hero from "@/assets/image.png"
 import { useDispatch } from "react-redux"
 import { Banknote, Coins, ReceiptText, Wrench } from "lucide-react"
 
@@ -45,7 +45,9 @@ export default function Menu() {
       >
         <section className="w-72 hidden lg:flex justify-center gap-3 items-center">
           <img src={hero} alt="Logo" className="w-9 h-9 rounded-full" />
-          <h2 className="font-semibold text-2xl text-gray-900">Falinber</h2>
+          <h2 className="font-semibold text-xl text-gray-900">
+            Debre brihan <br /> tax system
+          </h2>
         </section>
 
         <ul
@@ -132,7 +134,10 @@ export const MobileMenu = ({ onBarClicked }) => {
     >
       <section className="w-72 flex justify-center gap-3 items-center">
         <img src={hero} alt="Logo" className="w-9 h-9 rounded-full" />
-        <h2 className="font-semibold text-2xl text-gray-900">Falinber</h2>
+        <h2 className="font-semibold text-xl text-gray-900">
+          {" "}
+          Debre brihan tax system
+        </h2>
       </section>
 
       <li className="pl-5 my-3 ">
@@ -146,7 +151,7 @@ export const MobileMenu = ({ onBarClicked }) => {
         <DashboardLink
           isMobileMenu={true}
           text={"Dashboard"}
-          path="/user"
+          path="/admin/dashboard"
           icon={<HiOutlineHome size={23} />}
         />
       </span>
@@ -154,7 +159,7 @@ export const MobileMenu = ({ onBarClicked }) => {
         <DashboardLink
           isMobileMenu={true}
           text={"Pay Tax"}
-          path="/user/dashboard"
+          path="/admin/manage-users"
           icon={<MdPayment size={23} />}
         />
       </span>
@@ -162,7 +167,7 @@ export const MobileMenu = ({ onBarClicked }) => {
         <DashboardLink
           isMobileMenu={true}
           text={"Tax Filing"}
-          path="/user/dashboard"
+          path="/admin/manage-tax"
           icon={<RiFileList3Line size={23} />}
         />
       </span>
@@ -170,7 +175,7 @@ export const MobileMenu = ({ onBarClicked }) => {
         <DashboardLink
           isMobileMenu={true}
           text={"Payment History"}
-          path="/user/dashboard"
+          path="/admin/payment-log"
           icon={<MdHistory size={23} />}
         />
       </span>
@@ -178,23 +183,29 @@ export const MobileMenu = ({ onBarClicked }) => {
         <DashboardLink
           isMobileMenu={true}
           text={"Setting"}
-          path="/user/dashboard"
+          path="/admin/setting"
           icon={<AiOutlineSetting size={23} />}
         />
       </span>
       <span onClick={onBarClicked}>
         <DashboardLink
           isMobileMenu={true}
-          text={"Help center"}
-          path="/user/dashboard"
+          text={"System Maintenance"}
+          path="/admin/maintenance"
           icon={<MdSupportAgent size={23} />}
         />
       </span>
+      <DashboardLink
+        text={"Reports & Analytics"}
+        path="/admin/report"
+        isMobileMenu={true}
+        icon={<FiActivity size={23} />}
+      />
       <span onClick={onBarClicked}>
         <DashboardLink
           isMobileMenu={true}
           text={"Logout"}
-          path="/user/dashboard"
+          path="/admin/"
           icon={<FiLogOut size={23} />}
         />
       </span>

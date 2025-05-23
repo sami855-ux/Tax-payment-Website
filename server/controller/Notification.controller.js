@@ -217,7 +217,6 @@ export const notifyTaxpayerCompletion = async (userId) => {
     }
 
     const notificationData = {
-      type: "info",
       message: `New taxpayer (${user.fullName}) completed tax setup. Review their details `,
       sender: user._id,
       type: "success",
@@ -226,7 +225,7 @@ export const notifyTaxpayerCompletion = async (userId) => {
     if (user.assignedOfficial) {
       await Notification.create({
         ...notificationData,
-        link: `/official/user/${user._id}`,
+        link: `/official/taxpayer`,
         recipient: user.assignedOfficial,
         recipientModel: "official",
       })

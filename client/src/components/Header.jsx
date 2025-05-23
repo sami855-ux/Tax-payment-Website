@@ -1,6 +1,6 @@
 import { Link } from "react-scroll"
 import ButtonTwo from "../ui/ButtonTwo"
-import logo from "../assets/logo.png"
+import logo from "../assets/image.png"
 import { FaBars, FaTimes } from "react-icons/fa"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -35,11 +35,11 @@ export default function Header() {
           >
             <img
               src={logo}
-              alt="Flainber logo"
+              alt="Debre brihan tax system logo"
               className="w-10 h-10 md:w-12 md:h-12 object-cover rounded-full"
             />
             <h1 className="font-bold text-gray-800 text-xl md:text-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-transparent bg-clip-text">
-              Flainber
+              Debre brihan tax system
             </h1>
           </motion.div>
 

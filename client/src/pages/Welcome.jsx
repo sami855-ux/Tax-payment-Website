@@ -1,4 +1,3 @@
-import Testimonial from "@/components/Testimonial"
 import MoreService from "@/components/MoreService"
 import Services from "@/components/Services"
 import Header from "@/components/Header"
@@ -12,7 +11,6 @@ export default function App() {
       <Main />
       <Services />
       <MoreService />
-      <Testimonial />
       <Footer />
     </>
   )

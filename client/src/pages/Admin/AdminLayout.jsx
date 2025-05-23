@@ -5,7 +5,7 @@ import Navbar from "./Navbar"
 import Menu, { MobileMenu } from "./Menu"
 import { useDispatch } from "react-redux"
 import axios from "axios"
-import { login, logout } from "@/redux/slice/userSlice"
+import { logout } from "@/redux/slice/userSlice"
 
 export default function AdminLayout() {
   const [isBarClicked, setIsBarClicked] = useState(false)
@@ -32,7 +32,6 @@ export default function AdminLayout() {
           navigate("/")
         }
       } catch (error) {
-        console.log("hi")
         console.log(error)
 
         dispatch(logout())

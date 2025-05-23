@@ -76,7 +76,6 @@ const Maintenance = () => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_BASE_URL}/api/backup/download`,
-
         {
           widthCredentials: true,
           responseType: "blob",

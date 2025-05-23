@@ -16,42 +16,7 @@ import {
   removeNotification,
 } from "@/redux/slice/notificationSlice"
 import { markAllNotificationsRead } from "@/services/notification"
-
-// Mock data matching your schema
-const mockNotifications = [
-  {
-    _id: "1",
-    type: "warning",
-    message: "Tax filing deadline approaching in 3 days",
-    link: "/dashboard/filings/123",
-    read: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 5), // 5 mins ago
-  },
-  {
-    _id: "2",
-    type: "success",
-    message: "Payment of ETB 12,500 received successfully",
-    link: "/dashboard/payments/456",
-    read: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-  },
-  {
-    _id: "3",
-    type: "reminder",
-    message: "Monthly report submission required",
-    link: "/dashboard/reports",
-    read: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-  },
-  {
-    _id: "4",
-    type: "info",
-    message: "System maintenance scheduled for tomorrow",
-    link: "",
-    read: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48), // 2 days ago
-  },
-]
+import Spinner from "@/ui/Spinner"
 
 const Notification = () => {
   const { loading, items } = useSelector((store) => store.notification)
@@ -123,6 +88,14 @@ const Notification = () => {
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
     return `${Math.floor(diffInSeconds / 86400)}d ago`
   }
+
+  if (loading)
+    return (
+      <div className="w-full h-screen flex items-center justify-center">
+        <Spinner />
+        <span className="text-gray-500 text-sm mt-2">Loading...</span>
+      </div>
+    )
 
   return (
     <div className="w-full py-6 px-8">

@@ -76,7 +76,7 @@ export const generateInitialSchedules = async (userId) => {
         recipientModel: "taxpayer",
         type: "info",
         message: `Your ${categoryName} tax is scheduled (${frequency}). Due by ${dueDate.toDateString()}.`,
-        link: "/dashboard/filings",
+        link: "/dashboard/taxFilling",
       })
     }
 

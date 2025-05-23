@@ -1,15 +1,39 @@
 import { Outlet } from "react-router-dom"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import Navbar from "./Navbar"
 import Menu, { MobileMenu } from "./Menu"
+import { useDispatch } from "react-redux"
+import { fetchNotifications } from "@/redux/slice/notificationSlice"
+import { getUserById } from "@/services/apiUser"
+import { login } from "@/redux/slice/userSlice"
 
 export default function OfficialLayout() {
   const [isBarClicked, setIsBarClicked] = useState(false)
-
+  const dispatch = useDispatch()
   const handleBarClicked = () => {
     setIsBarClicked((curr) => !curr)
   }
+
+  useEffect(() => {
+    document.title = "Admin dashboard"
+
+    const getUserInfo = async () => {
+      const res = await getUserById()
+
+      if (res.success) {
+        dispatch(
+          login({
+            user: res.user,
+          })
+        )
+      }
+    }
+
+    getUserInfo()
+    dispatch(fetchNotifications())
+  }, [dispatch])
+
   return (
     <div className="w-full h-screen flex">
       {isBarClicked ? (

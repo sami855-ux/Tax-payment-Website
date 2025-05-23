@@ -112,25 +112,9 @@ export default function OfficialDashboard() {
   })
 
   const [activeIndex, setActiveIndex] = useState(0)
-  const dispatch = useDispatch()
 
   useEffect(() => {
     document.title = "Admin dashboard"
-
-    const getUserInfo = async () => {
-      const res = await getUserById()
-
-      if (res.success) {
-        dispatch(
-          login({
-            user: res.user,
-          })
-        )
-      }
-    }
-    dispatch(fetchNotifications())
-
-    getUserInfo()
   }, [])
 
   if (isLoading) return <Spinner />
