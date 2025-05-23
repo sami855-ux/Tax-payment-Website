@@ -5,7 +5,12 @@ import Navbar from "./Navbar"
 import Menu, { MobileMenu } from "./Menu"
 import { useDispatch } from "react-redux"
 import axios from "axios"
-import { logout } from "@/redux/slice/userSlice"
+import { login, logout } from "@/redux/slice/userSlice"
+import {
+  clearNotifications,
+  fetchNotifications,
+} from "@/redux/slice/notificationSlice"
+import { getUserById } from "@/services/apiUser"
 
 export default function AdminLayout() {
   const [isBarClicked, setIsBarClicked] = useState(false)
@@ -17,6 +22,23 @@ export default function AdminLayout() {
   }
 
   useEffect(() => {
+    const getUserInfo = async () => {
+      const res = await getUserById()
+
+      if (res.success) {
+        dispatch(
+          login({
+            user: res.user,
+          })
+        )
+
+        dispatch(clearNotifications())
+      }
+    }
+
+    getUserInfo()
+
+    dispatch(fetchNotifications())
     const checkUserSession = async () => {
       try {
         const response = await axios.get(
