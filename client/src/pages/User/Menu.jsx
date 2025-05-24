@@ -9,15 +9,12 @@ import { useDispatch, useSelector } from "react-redux"
 import { logout } from "@/redux/slice/userSlice"
 import { logoutUser } from "@/services/apiUser"
 import { useNavigate } from "react-router-dom"
-import hero from "@/assets/logo.png"
+import hero from "@/assets/image.png"
 import toast from "react-hot-toast"
-import { useEffect, useState } from "react"
-import { getApprovedTaxFilingsForUser } from "@/services/Tax"
 import { Landmark } from "lucide-react"
 
 export default function Menu({ approved }) {
   const { user } = useSelector((store) => store.user)
-  const { schedules } = useSelector((store) => store.filled)
   const navigate = useNavigate()
   const dispatch = useDispatch()
 
@@ -41,7 +38,9 @@ export default function Menu({ approved }) {
       >
         <section className="w-72 hidden lg:flex justify-center gap-3 items-center">
           <img src={hero} alt="Logo" className="w-9 h-9 rounded-full" />
-          <h2 className="font-semibold text-2xl text-gray-900">Falinber</h2>
+          <h2 className="font-semibold text-2xl text-gray-900">
+            Debre brihan tax system
+          </h2>
         </section>
 
         <ul
@@ -131,7 +130,9 @@ export const MobileMenu = ({ onBarClicked }) => {
     >
       <section className="w-72 flex justify-center gap-3 items-center">
         <img src={hero} alt="Logo" className="w-9 h-9 rounded-full" />
-        <h2 className="font-semibold text-2xl text-gray-900">Falinber</h2>
+        <h2 className="font-semibold text-2xl text-gray-900">
+          Debre brihan tax system
+        </h2>
       </section>
 
       <li className="pl-5 my-3 ">

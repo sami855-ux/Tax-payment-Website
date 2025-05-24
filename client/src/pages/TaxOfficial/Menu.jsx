@@ -5,7 +5,7 @@ import { RiFileList3Line } from "react-icons/ri"
 import DashboardLink from "@/ui/DashboardLink"
 import { HiOutlineHome } from "react-icons/hi"
 
-import hero from "@/assets/logo.png"
+import hero from "@/assets/image.png"
 import {
   LucideBarChart,
   LucideClipboardList,
@@ -40,7 +40,9 @@ export default function Menu() {
       >
         <section className="w-72 hidden lg:flex justify-center gap-3 items-center">
           <img src={hero} alt="Logo" className="w-9 h-9 rounded-full" />
-          <h2 className="font-semibold text-2xl text-gray-900">Falinber</h2>
+          <h2 className="font-semibold text-xl text-gray-900">
+            Debre brihan tax system
+          </h2>
         </section>
 
         <ul
@@ -121,7 +123,9 @@ export const MobileMenu = ({ onBarClicked }) => {
     >
       <section className="w-72 flex justify-center gap-3 items-center">
         <img src={hero} alt="Logo" className="w-9 h-9 rounded-full" />
-        <h2 className="font-semibold text-2xl text-gray-900">Falinber</h2>
+        <h2 className="font-semibold text-2xl text-gray-900">
+          Debre brihan tax system
+        </h2>
       </section>
 
       <li className="pl-5 my-3 ">
