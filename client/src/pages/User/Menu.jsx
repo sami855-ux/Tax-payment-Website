@@ -39,7 +39,8 @@ export default function Menu({ approved }) {
         <section className="w-72 hidden lg:flex justify-center gap-3 items-center">
           <img src={hero} alt="Logo" className="w-9 h-9 rounded-full" />
           <h2 className="font-semibold text-2xl text-gray-900">
-            Debre brihan tax system
+            Debre brihan <br />
+            tax system
           </h2>
         </section>
 
