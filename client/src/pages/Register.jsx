@@ -439,7 +439,7 @@ export async function action({ request }) {
     fullName: data["Full Name"],
     gender: data.sex,
     phoneNumber: parseInt(data["Mobile Phone"]),
-    taxId: data["Tax ID"],
+    taxId: data["TIN Number"],
     password: data.Password,
     confirmPassword: data["Confirm password"],
     email: data.Email,
