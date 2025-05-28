@@ -458,7 +458,7 @@ function CreateTaxRule({
                 VAT
               </option>
               <option value="Business" className="text-[15px] cursor-pointer">
-                Business
+                TOT
               </option>
             </select>
           </div>

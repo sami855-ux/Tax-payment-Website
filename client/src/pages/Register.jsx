@@ -143,7 +143,6 @@ export default function Register() {
                     <option value="">Select Gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
-                    <option value="other">Other</option>
                   </select>
                 </div>
 
@@ -173,8 +172,8 @@ export default function Register() {
                 </div>
 
                 <FormInput
-                  placeholder="Tax ID"
-                  name="Tax ID"
+                  placeholder="TIN number"
+                  name="TIN Number"
                   type="text"
                   icon={
                     <HiIdentification size={18} className="text-gray-500" />

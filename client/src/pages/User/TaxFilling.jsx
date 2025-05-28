@@ -95,6 +95,11 @@ export default function TaxFilling() {
       return
     }
 
+    if (taxCategory !== "personal" && referenceNumber < 0) {
+      toast.error("Amount can not be negative")
+      return
+    }
+
     setIsSubmitting(true)
 
     const formData = new FormData()
@@ -204,7 +209,7 @@ export default function TaxFilling() {
                 <option value="">Select Category</option>
                 {user?.taxCategories.map((data, dataIndex) => (
                   <option value={data} key={dataIndex} className="capitalize">
-                    {data}
+                    {data === "business" ? "TOT" : data}
                   </option>
                 ))}
               </select>
@@ -246,8 +251,6 @@ export default function TaxFilling() {
                 <option value="">Select Purpose</option>
                 <option value="Regular Filing">Regular Filing</option>
                 <option value="Penalty Payment">Late Filing Penalty</option>
-                <option value="Audit Settlement">Audit Settlement</option>
-                <option value="Advance Payment">Advance Tax Payment</option>
               </select>
             </div>
 
@@ -256,7 +259,7 @@ export default function TaxFilling() {
               <div className="space-y-2">
                 <label className="flex items-center text-sm font-medium text-gray-700">
                   <FiFileText className="mr-2 text-gray-400" />
-                  Total amount (optional)
+                  Total amount
                 </label>
                 <input
                   type="text"

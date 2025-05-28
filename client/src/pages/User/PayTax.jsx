@@ -292,7 +292,9 @@ export default function PayTax() {
                         >
                           <div>
                             <p className="font-medium text-gray-800 capitalize">
-                              {data.taxCategory}
+                              {data.taxCategory === "business"
+                                ? "TOT"
+                                : data.taxCategory}
                             </p>
                             <p className="text-sm text-gray-500">
                               Due{" "}
@@ -403,7 +405,7 @@ export default function PayTax() {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-gray-800 capitalize">
-                          {tax.name}
+                          {tax.name === "business" ? "TOT" : tax.name}
                         </h3>
                         <p className="text-sm text-gray-500 mt-1">
                           {tax.description}
