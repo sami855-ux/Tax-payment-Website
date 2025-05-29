@@ -37,7 +37,7 @@ const TaxSetupWizard = () => {
 
   const taxCategories = [
     { value: "personal", label: "Personal Income", icon: <User size={18} /> },
-    { value: "business", label: "Business", icon: <Briefcase size={18} /> },
+    { value: "business", label: "TOT", icon: <Briefcase size={18} /> },
     { value: "vat", label: "VAT", icon: <FileText size={18} /> },
     { value: "property", label: "Property", icon: <Home size={18} /> },
     { value: "other", label: "Other", icon: <Landmark size={18} /> },

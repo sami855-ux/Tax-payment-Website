@@ -325,7 +325,9 @@ function TaxRulesTable({ rules, onEdit, onDelete }) {
               transition={{ delay: i * 0.05 }}
             >
               <div className="col-span-3 font-medium">{rule.name}</div>
-              <div className="col-span-2">{rule.category}</div>
+              <div className="col-span-2">
+                {rule.category == "Business" ? "TOT" : rule.category}
+              </div>
               <div className="col-span-2">{rule.type}</div>
               <div className="col-span-2">{getRateDisplay(rule)}</div>
               <div className="col-span-1">
